@@ -23,7 +23,7 @@ env:
 
 jobs:
   lint:
-    name: Lint & Type Check
+    name: Lint and Type Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -154,8 +154,7 @@ jobs:
           path: allure-results/
 
       - name: Generate Allure Report
-        run: |
-          npx allure generate allure-results --clean -o allure-report
+        run: npx allure generate allure-results --clean -o allure-report
         continue-on-error: true
 
       - name: Upload Allure Report
@@ -172,7 +171,7 @@ jobs:
     if: always()
     steps:
       - run: |
-          echo "## ✅ Summary of Security Tests Pipeline" >> $GITHUB_STEP_SUMMARY
+          echo "## Summary of Security Tests Pipeline" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Lint**: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Security Tests**: ${{ needs.security-tests.result }}" >> $GITHUB_STEP_SUMMARY
