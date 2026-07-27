@@ -3,7 +3,7 @@
 # Realiza um scan passivo de vulnerabilidades na aplicação
 # Uso: ./zap/zap-baseline-scan.sh
 
-TARGET_URL="${1:-https://www.saucedemo.com}"
+TARGET_URL="${1:-https://serverest.dev}"
 REPORT_DIR="reports"
 
 mkdir -p "$REPORT_DIR"
