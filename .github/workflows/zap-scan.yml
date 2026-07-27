@@ -1,0 +1,101 @@
+name: OWASP ZAP DAST Scan
+
+on:
+  schedule:
+    # Executa toda segunda-feira às 06:00 UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'URL alvo para o scan'
+        required: true
+        default: 'https://serverest.dev'
+      scan_type:
+        description: 'Tipo de scan'
+        required: true
+        default: 'baseline'
+        type: choice
+        options:
+          - baseline
+          - api
+
+env:
+  REPORT_DIR: reports
+
+jobs:
+  zap-scan:
+    name: OWASP ZAP ${{ github.event.inputs.scan_type || 'baseline' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Target URL
+        id: vars
+        run: |
+          if [ "${{ github.event.inputs.target_url }}" != "" ]; then
+            echo "TARGET=${{ github.event.inputs.target_url }}" >> $GITHUB_OUTPUT
+          else
+            echo "TARGET=https://serverest.dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ZAP Baseline Scan
+        if: github.event.inputs.scan_type == 'baseline' || github.event.inputs.scan_type == ''
+        run: |
+          mkdir -p ${{ env.REPORT_DIR }}
+          docker run --rm -v "$(pwd)/${{ env.REPORT_DIR }}:/zap/wrk:rw" \
+            -t owasp/zap2docker-weekly \
+            zap-baseline.py \
+            -t "${{ steps.vars.outputs.TARGET }}" \
+            -r /zap/wrk/zap-report.html \
+            -x /zap/wrk/zap-report.xml \
+            -I
+        continue-on-error: true
+
+      - name: ZAP API Scan
+        if: github.event.inputs.scan_type == 'api'
+        run: |
+          mkdir -p ${{ env.REPORT_DIR }}
+          docker run --rm -v "$(pwd)/${{ env.REPORT_DIR }}:/zap/wrk:rw" \
+            -t owasp/zap2docker-weekly \
+            zap-api-scan.py \
+            -t "${{ steps.vars.outputs.TARGET }}" \
+            -f openapi \
+            -r /zap/wrk/zap-api-report.html \
+            -x /zap/wrk/zap-api-report.xml
+        continue-on-error: true
+
+      - name: Check for High Vulnerabilities
+        id: check_vulns
+        run: |
+          if [ -f "${{ env.REPORT_DIR }}/zap-report.xml" ]; then
+            HIGH_COUNT=$(grep -c 'risk="High"' "${{ env.REPORT_DIR }}/zap-report.xml" 2>/dev/null || echo "0")
+            echo "HIGH_COUNT=$HIGH_COUNT" >> $GITHUB_OUTPUT
+            if [ "$HIGH_COUNT" -gt "0" ]; then
+              echo "⚠️ Encontradas $HIGH_COUNT vulnerabilidades de nível ALTO!"
+              grep 'risk="High"' "${{ env.REPORT_DIR }}/zap-report.xml" | head -10
+            else
+              echo "✅ Nenhuma vulnerabilidade de nível alto encontrada."
+            fi
+          fi
+
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report-${{ github.event.inputs.scan_type || 'baseline' }}
+          path: ${{ env.REPORT_DIR }}/
+          retention-days: 30
+
+      - name: Generate Summary
+        if: always()
+        run: |
+          echo "## 🛡️ OWASP ZAP Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Detail | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Target** | ${{ steps.vars.outputs.TARGET }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Scan Type** | ${{ github.event.inputs.scan_type || 'baseline' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **High Vulns** | ${{ steps.check_vulns.outputs.HIGH_COUNT || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 [Download ZAP Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+

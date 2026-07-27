@@ -1,12 +1,14 @@
-import { allure } from 'allure-playwright';
+import { allure } from "allure-playwright";
 
 export class AllureHelper {
-  static addSeverity(severity: 'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'): void {
+  static addSeverity(
+    severity: "blocker" | "critical" | "normal" | "minor" | "trivial",
+  ): void {
     allure.severity(severity);
   }
 
   static addTags(...tags: string[]): void {
-    tags.forEach(tag => allure.tag(tag));
+    tags.forEach((tag) => allure.tag(tag));
   }
 
   static addDescription(text: string): void {
@@ -22,10 +24,14 @@ export class AllureHelper {
   }
 
   static addTestCaseId(id: string): void {
-    allure.addParameter('testCaseId', id);
+    allure.addParameter("testCaseId", id);
   }
 
-  static addAttachment(name: string, content: string | Buffer, type: string): void {
+  static addAttachment(
+    name: string,
+    content: string | Buffer,
+    type: string,
+  ): void {
     allure.attachment(name, content, type);
   }
 
@@ -41,7 +47,9 @@ export class AllureHelper {
     allure.story(story);
   }
 
+  // CORREÇÃO: Método addEnvironment compatível com allure-playwright
   static addEnvironment(key: string, value: string): void {
-    allure.addEnvironment(key, value);
+    // Usando addParameter que é suportado pelo allure-playwright
+    allure.addParameter(`environment_${key}`, value);
   }
 }
