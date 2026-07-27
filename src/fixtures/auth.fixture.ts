@@ -16,10 +16,6 @@ export interface UserData {
   nome: string;
 }
 
-/**
- * Cria um contexto autenticado como administrador
- * Usa variáveis de ambiente ou dados padrão
- */
 export async function createAuthenticatedClient(): Promise<AuthContext> {
   const baseUrl = process.env.API_BASE_URL || "https://serverest.dev";
   const email = process.env.TEST_USER_EMAIL || "admin@teste.com";
@@ -34,7 +30,7 @@ export async function createAuthenticatedClient(): Promise<AuthContext> {
   try {
     await client.login(email, password);
   } catch (error) {
-    console.warn("⚠️ Login falhou, criando usuário admin...");
+    console.warn("Login falhou, criando usuario admin...");
     await createAdminUser(client, email, password);
     await client.login(email, password);
   }
@@ -47,9 +43,6 @@ export async function createAuthenticatedClient(): Promise<AuthContext> {
   };
 }
 
-/**
- * Cria um contexto autenticado como usuário comum
- */
 export async function createCommonUser(): Promise<AuthContext> {
   const baseUrl = process.env.API_BASE_URL || "https://serverest.dev";
   const email = faker.internet.email();
@@ -72,9 +65,6 @@ export async function createCommonUser(): Promise<AuthContext> {
   };
 }
 
-/**
- * Cria um usuário administrador
- */
 async function createAdminUser(
   client: ApiClient,
   email: string,
@@ -92,9 +82,6 @@ async function createAdminUser(
   );
 }
 
-/**
- * Cria um usuário comum
- */
 async function createUser(
   client: ApiClient,
   email: string,
@@ -113,13 +100,10 @@ async function createUser(
   );
 }
 
-/**
- * Obtém a URL base da API
- */
 export function getBaseUrl(): string {
   const url = process.env.API_BASE_URL;
   if (!url || url.trim() === "") {
-    throw new Error("API_BASE_URL não configurada no ambiente");
+    throw new Error("API_BASE_URL nao configurada no ambiente");
   }
   return url;
 }

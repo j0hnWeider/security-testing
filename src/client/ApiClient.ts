@@ -13,29 +13,20 @@ export class ApiClient {
 
   constructor(context: APIRequestContext, baseUrl: string) {
     if (!baseUrl || baseUrl.trim() === "") {
-      throw new Error("API_BASE_URL não configurada");
+      throw new Error("API_BASE_URL nao configurada");
     }
     this.context = context;
     this.baseUrl = baseUrl;
   }
 
-  /**
-   * Define o token de autenticação
-   */
   setToken(token: string): void {
     this.token = token;
   }
 
-  /**
-   * Obtém o token atual
-   */
   getToken(): string | null {
     return this.token;
   }
 
-  /**
-   * Faz login na API
-   */
   async login(
     email: string,
     password: string,
@@ -53,16 +44,13 @@ export class ApiClient {
     }
 
     if (!data.authorization) {
-      throw new Error("Resposta de login não contém token");
+      throw new Error("Resposta de login nao contem token");
     }
 
     this.token = data.authorization;
     return { authorization: data.authorization };
   }
 
-  /**
-   * Faz uma requisição GET
-   */
   async get(
     path: string,
     authenticated: boolean = true,
@@ -71,9 +59,6 @@ export class ApiClient {
     return this.request("GET", path, authenticated, options);
   }
 
-  /**
-   * Faz uma requisição POST
-   */
   async post(
     path: string,
     data?: Record<string, unknown>,
@@ -83,9 +68,6 @@ export class ApiClient {
     return this.request("POST", path, authenticated, { ...options, data });
   }
 
-  /**
-   * Faz uma requisição PUT
-   */
   async put(
     path: string,
     data?: Record<string, unknown>,
@@ -95,9 +77,6 @@ export class ApiClient {
     return this.request("PUT", path, authenticated, { ...options, data });
   }
 
-  /**
-   * Faz uma requisição DELETE
-   */
   async delete(
     path: string,
     authenticated: boolean = true,
@@ -106,9 +85,6 @@ export class ApiClient {
     return this.request("DELETE", path, authenticated, options);
   }
 
-  /**
-   * Método genérico para requisições HTTP usando fetch do Playwright
-   */
   private async request(
     method: string,
     path: string,
@@ -147,7 +123,7 @@ export class ApiClient {
     const response = await this.context.fetch(url, fetchOptions);
 
     if (authenticated && response.status() === 401) {
-      console.warn("⚠️ Token pode ter expirado ou ser inválido");
+      console.warn("Token pode ter expirado ou ser invalido");
     }
 
     return response;
