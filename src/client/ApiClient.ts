@@ -1,4 +1,4 @@
-import { APIRequestContext, APIResponse } from '@playwright/test';
+import { APIRequestContext, APIResponse } from "@playwright/test";
 
 export class ApiClient {
   private request: APIRequestContext;
@@ -6,6 +6,11 @@ export class ApiClient {
   private token: string | null = null;
 
   constructor(request: APIRequestContext, baseURL: string) {
+    if (!baseURL || baseURL.trim() === "") {
+      throw new Error(
+        "API_BASE_URL is required but was not provided. Set it via environment variable or pass a valid URL.",
+      );
+    }
     this.request = request;
     this.baseURL = baseURL;
   }
@@ -32,7 +37,9 @@ export class ApiClient {
     const token = body.authorization || body.token;
 
     if (!token) {
-      throw new Error(`Login não retornou token. Campos: ${Object.keys(body).join(', ')}`);
+      throw new Error(
+        `Login não retornou token. Campos: ${Object.keys(body).join(", ")}`,
+      );
     }
 
     this.token = token;
@@ -41,8 +48,10 @@ export class ApiClient {
 
   private getAuthHeader(): Record<string, string> {
     if (!this.token) return {};
-    const authValue = this.token.startsWith('Bearer ') ? this.token : `Bearer ${this.token}`;
-    return { 'Authorization': authValue };
+    const authValue = this.token.startsWith("Bearer ")
+      ? this.token
+      : `Bearer ${this.token}`;
+    return { Authorization: authValue };
   }
 
   async get(endpoint: string, auth: boolean = false): Promise<APIResponse> {
@@ -50,14 +59,28 @@ export class ApiClient {
     return await this.request.get(`${this.baseURL}${endpoint}`, { headers });
   }
 
-  async post(endpoint: string, data: any, auth: boolean = false): Promise<APIResponse> {
+  async post(
+    endpoint: string,
+    data: any,
+    auth: boolean = false,
+  ): Promise<APIResponse> {
     const headers = auth ? this.getAuthHeader() : {};
-    return await this.request.post(`${this.baseURL}${endpoint}`, { data, headers });
+    return await this.request.post(`${this.baseURL}${endpoint}`, {
+      data,
+      headers,
+    });
   }
 
-  async put(endpoint: string, data: any, auth: boolean = false): Promise<APIResponse> {
+  async put(
+    endpoint: string,
+    data: any,
+    auth: boolean = false,
+  ): Promise<APIResponse> {
     const headers = auth ? this.getAuthHeader() : {};
-    return await this.request.put(`${this.baseURL}${endpoint}`, { data, headers });
+    return await this.request.put(`${this.baseURL}${endpoint}`, {
+      data,
+      headers,
+    });
   }
 
   async delete(endpoint: string, auth: boolean = false): Promise<APIResponse> {
@@ -65,12 +88,22 @@ export class ApiClient {
     return await this.request.delete(`${this.baseURL}${endpoint}`, { headers });
   }
 
-  async rawPost(endpoint: string, data: any, customHeaders?: Record<string, string>): Promise<APIResponse> {
+  async rawPost(
+    endpoint: string,
+    data: any,
+    customHeaders?: Record<string, string>,
+  ): Promise<APIResponse> {
     const headers = { ...this.getAuthHeader(), ...customHeaders };
-    return await this.request.post(`${this.baseURL}${endpoint}`, { data, headers });
+    return await this.request.post(`${this.baseURL}${endpoint}`, {
+      data,
+      headers,
+    });
   }
 
-  async rawGet(endpoint: string, customHeaders?: Record<string, string>): Promise<APIResponse> {
+  async rawGet(
+    endpoint: string,
+    customHeaders?: Record<string, string>,
+  ): Promise<APIResponse> {
     const headers = { ...customHeaders };
     return await this.request.get(`${this.baseURL}${endpoint}`, { headers });
   }
