@@ -64,7 +64,7 @@ jobs:
         run: npx playwright install chromium
 
       - name: Create reports directory
-        run: mkdir -p reports/playwright-report allure-results test-results
+        run: mkdir -p playwright-report allure-results test-results
 
       - name: Run Security Tests (Shard ${{ matrix.shard }}/4)
         run: npx playwright test --shard=${{ matrix.shard }}/4
@@ -76,7 +76,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ matrix.shard }}
+          name: playwright-report-shard-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 7
 
@@ -84,7 +84,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: allure-results-${{ matrix.shard }}
+          name: allure-results-shard-${{ matrix.shard }}
           path: allure-results/
           retention-days: 7
 
@@ -92,7 +92,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.shard }}
+          name: test-results-shard-${{ matrix.shard }}
           path: test-results/
           retention-days: 3
 
@@ -149,7 +149,7 @@ jobs:
       - name: Download Allure Results
         uses: actions/download-artifact@v4
         with:
-          pattern: allure-results-*
+          pattern: allure-results-shard-*
           merge-multiple: true
           path: allure-results/
 
