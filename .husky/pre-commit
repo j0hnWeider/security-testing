@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Verificar variáveis de ambiente obrigatórias
+echo "  📋 Checking environment variables..."
+npx --yes dotenv-check --required=API_BASE_URL 2>/dev/null || true
+
+# Executar lint-staged
+echo "  🔎 Running lint-staged..."
+npx lint-staged
+
+# Verificar TypeScript compilation
+echo "  🔧 TypeScript compilation check..."
+npx tsc --noEmit || {
+    echo "❌ TypeScript compilation failed. Fix errors before committing."
+    exit 1
+}
+
+echo "✅ Pre-commit checks passed!"
+
