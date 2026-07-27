@@ -1,0 +1,26 @@
+# Repository Code Owners
+# Each line is a file pattern followed by users or teams responsible
+
+# Default owners for everything
+* @j0hnWeider
+
+# Security test files - require review from security-focused maintainers
+/src/tests/         @j0hnWeider
+/src/fixtures/      @j0hnWeider
+/src/client/        @j0hnWeider
+
+# CI/CD pipeline files
+/.github/           @j0hnWeider
+
+# Security documentation
+SECURITY.md         @j0hnWeider
+
+# ZAP configuration
+/zap/               @j0hnWeider
+
+# Configuration files
+playwright.config.ts @j0hnWeider
+.eslintrc.js        @j0hnWeider
+tsconfig.json       @j0hnWeider
+.nycrc.json         @j0hnWeider
+
