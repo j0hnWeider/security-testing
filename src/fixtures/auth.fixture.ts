@@ -1,117 +1,125 @@
-import { APIRequestContext, request } from "@playwright/test";
+import { request, APIRequestContext } from "@playwright/test";
 import { ApiClient } from "../client/ApiClient";
 import { faker } from "@faker-js/faker";
 
-export interface AuthFixture {
+export interface AuthContext {
   client: ApiClient;
+  apiContext: APIRequestContext;
   email: string;
   password: string;
-  apiContext: APIRequestContext;
+  token?: string;
+}
+
+export interface UserData {
+  email: string;
+  password: string;
+  nome: string;
 }
 
 /**
- * Retorna a URL base da API a partir das variáveis de ambiente
+ * Cria um contexto autenticado como administrador
+ * Usa variáveis de ambiente ou dados padrão
  */
-function getBaseUrl(): string {
-  return process.env.API_BASE_URL || "https://serverest.dev";
-}
-
-/**
- * Retorna a senha para testes, com fallback seguro
- */
-function getTestPassword(): string {
-  return process.env.TEST_PASSWORD || "123456";
-}
-
-/**
- * Cria uma conta administradora via API e retorna um cliente autenticado
- */
-export async function createAuthenticatedClient(): Promise<AuthFixture> {
-  const maxRetries = 3;
-  let lastError: Error | null = null;
-  const baseURL = getBaseUrl();
-  const password = getTestPassword();
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const apiContext = await request.newContext({
-        baseURL,
-        extraHTTPHeaders: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
-
-      const email = `sec_test_${faker.string.alphanumeric(10)}@teste.com`;
-
-      const createResponse = await apiContext.post("/usuarios", {
-        data: {
-          nome: "Security Tester",
-          email,
-          password,
-          administrador: "true",
-        },
-      });
-
-      if (createResponse.status() !== 201) {
-        const errorBody = await createResponse.text();
-        throw new Error(
-          `Falha ao criar conta (${createResponse.status()}): ${errorBody}`,
-        );
-      }
-
-      const client = new ApiClient(apiContext, baseURL);
-      await client.login(email, password);
-
-      return { client, email, password, apiContext };
-    } catch (error: any) {
-      lastError = error;
-      console.warn(
-        `Tentativa ${attempt}/${maxRetries} falhou: ${error.message}`,
-      );
-      if (attempt < maxRetries) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-    }
-  }
-
-  throw new Error(`Falha após ${maxRetries} tentativas: ${lastError?.message}`);
-}
-
-/**
- * Cria um usuário COMUM (não administrador) e retorna cliente autenticado
- */
-export async function createCommonUser(): Promise<AuthFixture> {
-  const baseURL = getBaseUrl();
-  const password = getTestPassword();
+export async function createAuthenticatedClient(): Promise<AuthContext> {
+  const baseUrl = process.env.API_BASE_URL || "https://serverest.dev";
+  const email = process.env.TEST_USER_EMAIL || "admin@teste.com";
+  const password = process.env.TEST_PASSWORD || "123456";
 
   const apiContext = await request.newContext({
-    baseURL,
-    extraHTTPHeaders: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
+    baseURL: baseUrl,
   });
 
-  const email = `common_${faker.string.alphanumeric(10)}@teste.com`;
+  const client = new ApiClient(apiContext, baseUrl);
 
-  const createResponse = await apiContext.post("/usuarios", {
-    data: {
-      nome: "Usuario Comum",
-      email,
-      password,
-      administrador: "false",
-    },
-  });
-
-  if (createResponse.status() !== 201) {
-    throw new Error(
-      `Falha ao criar usuário comum: ${await createResponse.text()}`,
-    );
+  try {
+    await client.login(email, password);
+  } catch (error) {
+    console.warn("⚠️ Login falhou, criando usuário admin...");
+    await createAdminUser(client, email, password);
+    await client.login(email, password);
   }
 
-  const client = new ApiClient(apiContext, baseURL);
+  return {
+    client,
+    apiContext,
+    email,
+    password,
+  };
+}
+
+/**
+ * Cria um contexto autenticado como usuário comum
+ */
+export async function createCommonUser(): Promise<AuthContext> {
+  const baseUrl = process.env.API_BASE_URL || "https://serverest.dev";
+  const email = faker.internet.email();
+  const password = "teste123";
+
+  const apiContext = await request.newContext({
+    baseURL: baseUrl,
+  });
+
+  const client = new ApiClient(apiContext, baseUrl);
+
+  await createUser(client, email, password, faker.person.fullName());
   await client.login(email, password);
 
-  return { client, email, password, apiContext };
+  return {
+    client,
+    apiContext,
+    email,
+    password,
+  };
+}
+
+/**
+ * Cria um usuário administrador
+ */
+async function createAdminUser(
+  client: ApiClient,
+  email: string,
+  password: string,
+): Promise<void> {
+  await client.post(
+    "/usuarios",
+    {
+      nome: "Admin Teste",
+      email: email,
+      password: password,
+      administrador: "true",
+    },
+    false,
+  );
+}
+
+/**
+ * Cria um usuário comum
+ */
+async function createUser(
+  client: ApiClient,
+  email: string,
+  password: string,
+  nome: string,
+): Promise<void> {
+  await client.post(
+    "/usuarios",
+    {
+      nome: nome,
+      email: email,
+      password: password,
+      administrador: "false",
+    },
+    false,
+  );
+}
+
+/**
+ * Obtém a URL base da API
+ */
+export function getBaseUrl(): string {
+  const url = process.env.API_BASE_URL;
+  if (!url || url.trim() === "") {
+    throw new Error("API_BASE_URL não configurada no ambiente");
+  }
+  return url;
 }
