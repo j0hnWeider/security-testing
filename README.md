@@ -5,7 +5,7 @@
 
 <div align="center">
 
-# 🔒 Security Testing
+#  Security Testing
 
 **Laboratório de Testes de Segurança — API ServeRest**
 
@@ -22,13 +22,13 @@
 
 ---
 
-## 🎯 Objetivo
+##  Objetivo
 
 Repositório focado exclusivamente em **testes de segurança** contra a API [ServeRest](https://serverest.dev). Diferente do QA Forge (que cobre múltiplas camadas), este projeto aprofunda-se em vulnerabilidades reais seguindo o **OWASP Top 10**, **OWASP ASVS** e **OWASP Secure Headers**.
 
 ---
 
-## 📋 Matriz de Cobertura
+##  Matriz de Cobertura
 
 | Categoria | ID | Vulnerabilidade Alvo | Status |
 |-----------|----|----------------------|:------:|
@@ -51,7 +51,7 @@ Repositório focado exclusivamente em **testes de segurança** contra a API [Ser
 
 ---
 
-## 🏗️ Arquitetura
+##  Arquitetura
 
 ```
 security-testing/
@@ -98,7 +98,7 @@ security-testing/
 
 ---
 
-## 🧪 Cenários de Teste
+##  Cenários de Teste
 
 ### 🔴 Injeção (CT-SEC)
 
@@ -142,7 +142,7 @@ security-testing/
 
 ---
 
-## 🛡️ OWASP ZAP
+##  OWASP ZAP
 
 O projeto inclui scripts prontos para execução do **OWASP ZAP** via Docker:
 
@@ -158,7 +158,7 @@ Reports gerados em `reports/zap-report.html` e `reports/zap-report.xml`.
 
 ---
 
-## 📊 Relatórios
+##  Relatórios
 
 | Tipo | Comando | Saída |
 |------|---------|-------|
@@ -169,7 +169,7 @@ Reports gerados em `reports/zap-report.html` e `reports/zap-report.xml`.
 
 ---
 
-## 🔗 Mapeamento OWASP
+##  Mapeamento OWASP
 
 | Classe de Teste | OWASP Top 10 (2021) | ASVS |
 |-----------------|---------------------|------|
@@ -187,7 +187,7 @@ Reports gerados em `reports/zap-report.html` e `reports/zap-report.xml`.
 
 ---
 
-## ⚙️ Configuração
+##  Configuração
 
 ```bash
 # Instalar dependências
@@ -205,7 +205,7 @@ npm run report:allure
 
 ---
 
-## 📄 Licença
+##  Licença
 
 MIT
 
