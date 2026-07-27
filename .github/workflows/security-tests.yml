@@ -154,8 +154,7 @@ jobs:
           path: allure-results/
 
       - name: Generate Allure Report
-        run: |
-          npx allure generate allure-results --clean -o allure-report
+        run: npx allure generate allure-results --clean -o allure-report
         continue-on-error: true
 
       - name: Upload Allure Report
