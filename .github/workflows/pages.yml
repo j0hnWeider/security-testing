@@ -2,8 +2,11 @@ name: Deploy Reports to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+    paths:
+      - 'reports/**'
+      - 'playwright-report/**'
+      - 'allure-report/**'
   workflow_dispatch:
 
 permissions:
@@ -11,16 +14,12 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
   deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,7 +30,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./reports
+          path: './reports'
 
       - name: Deploy to GitHub Pages
         id: deployment
