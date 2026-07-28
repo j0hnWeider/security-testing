@@ -1,7 +1,7 @@
 /**
- * Testes de Segurança - Injeções (SQL, XSS, Path Traversal, NoSQL)
+ * Testes de Seguranca - Injeccoes (SQL, XSS, Path Traversal, NoSQL)
  *
- * Objetivo: validar proteção contra injeções
+ * Objetivo: validar protecao contra injeccoes
  * Abordagem: OWASP Top 10 - A03:2021 (Injection)
  */
 
@@ -10,7 +10,7 @@ import { createAuthenticatedClient } from "../fixtures/auth.fixture";
 import { AllureHelper } from "../utils/allure-helper";
 import { APIResponse } from "@playwright/test";
 
-test.describe("CT-SEC - Testes de Injeção", () => {
+test.describe("CT-SEC - Testes de Injeccao", () => {
   let authContext: any;
 
   test.beforeAll(async () => {
@@ -30,7 +30,7 @@ test.describe("CT-SEC - Testes de Injeção", () => {
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "injection", "sql");
     AllureHelper.addDescription(
-      "Valida que a API está protegida contra ataques de SQL Injection.",
+      "Valida que a API esta protegida contra ataques de SQL Injection.",
     );
     AllureHelper.addTestCaseId("CT-SEC-01");
 
@@ -67,7 +67,9 @@ test.describe("CT-SEC - Testes de Injeção", () => {
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "injection", "xss");
     AllureHelper.addDescription(
-      "Valida que a API está protegida contra ataques de XSS.",
+      "Valida que a API esta protegida contra ataques de XSS. " +
+        "Verifica se a resposta nao contem o payload malicioso na forma executavel " +
+        "(sanitizacao) ou se o payload foi rejeitado (400).",
     );
     AllureHelper.addTestCaseId("CT-SEC-02");
 
@@ -97,7 +99,26 @@ test.describe("CT-SEC - Testes de Injeção", () => {
             },
             true,
           );
-          expect([200, 400, 500]).toContain(response.status());
+
+          // 1. Verifica se o status e de sucesso (sanitizacao) OU de rejeicao
+          expect([200, 201, 400, 500]).toContain(response.status());
+
+          // 2. CRITICO: Verifica se o payload foi sanitizado ou rejeitado
+          //    Se a API retornou 200/201, o produto foi criado e o payload
+          //    nao deve estar presente de forma executavel no response body.
+          if (response.status() === 200 || response.status() === 201) {
+            const body = await response.json();
+            const descricao = body?.descricao || "";
+            const nome = body?.nome || "";
+
+            // Verifica que o payload XSS nao esta presente como codigo executavel
+            expect(descricao).not.toContain("<script>");
+            expect(descricao).not.toContain("onerror");
+            expect(descricao).not.toContain("onload");
+            expect(descricao).not.toContain("onfocus");
+            expect(descricao).not.toContain("javascript:");
+            expect(nome).not.toContain("<script>");
+          }
         },
       );
     }
@@ -110,7 +131,7 @@ test.describe("CT-SEC - Testes de Injeção", () => {
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "injection", "path-traversal");
     AllureHelper.addDescription(
-      "Valida que a API está protegida contra ataques de Path Traversal.",
+      "Valida que a API esta protegida contra ataques de Path Traversal.",
     );
     AllureHelper.addTestCaseId("CT-SEC-03");
 
@@ -144,7 +165,7 @@ test.describe("CT-SEC - Testes de Injeção", () => {
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "injection", "nosql");
     AllureHelper.addDescription(
-      "Valida que a API está protegida contra ataques de NoSQL Injection.",
+      "Valida que a API esta protegida contra ataques de NoSQL Injection.",
     );
     AllureHelper.addTestCaseId("CT-SEC-10");
 
