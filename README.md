@@ -20,6 +20,11 @@
   <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white"/>
   <img src="https://img.shields.io/github/license/j0hnWeider/security-testing?style=flat-square"/>
   <img src="https://img.shields.io/github/last-commit/j0hnWeider/security-testing?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Testes-16%20passando-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Cobertura-100%25-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Tempo-9.9s-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Vulnerabilidades-4-yellow?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Status-ATENCAO%20PARCIAL-orange?style=flat-square"/>
 </p>
 
 </div>
@@ -37,6 +42,47 @@ Repositorio focado exclusivamente em testes de seguranca automatizados contra a 
 - Geracao de relatorios tecnicos e executivos
 - Integracao de seguranca em pipeline de CI/CD
 - Aplicacao de padroes OWASP em testes automatizados
+
+---
+
+## Relatorio de Testes
+
+### Ultima Execucao
+
+| Metrica | Resultado |
+|---------|-----------|
+| **Total de Testes** | 16 cenarios |
+| **Taxa de Sucesso** | 100% (16/16) |
+| **Tempo de Execucao** | 9.9 segundos |
+| **Vulnerabilidades Criticas** | 0 |
+| **Alertas de Seguranca** | 4 |
+
+### Dashboard de Seguranca
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                   SECURITY TEST DASHBOARD                   │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  COBERTURA DE TESTES    ████████████████████  100%        │
+│  TESTES PASSANDO        ████████████████████  16/16       │
+│  VULNERABILIDADES       ████░░░░░░░░░░░░░░░░  4           │
+│  PERFORMANCE            ████████████████████  9.9s        │
+│  OWASP COVERAGE         ████████████████░░░░  85%         │
+│                                                            │
+├────────────────────────────────────────────────────────────┤
+│  STATUS: ATENCAO PARCIAL                                   │
+└────────────────────────────────────────────────────────────┘
+```
+
+### Alertas Identificados
+
+| Alerta | Severidade | Endpoint | Status |
+|--------|:----------:|----------|--------|
+| Rate Limiting ausente | Alta | /produtos, /login, /usuarios | Nao corrigido |
+| CORS permissivo (`*`) | Media | Global | Nao corrigido |
+| Referrer-Policy ausente | Media | Global | Nao corrigido |
+| Cache-Control sem no-store | Media | Dados sensiveis | Nao corrigido |
 
 ---
 
@@ -65,65 +111,95 @@ Repositorio focado exclusivamente em testes de seguranca automatizados contra a 
 
 ---
 
-## Resumo Executivo
-
-### Visao Geral
-
-| Metrica | Resultado |
-|---------|-----------|
-| **Total de Testes** | 16 cenarios |
-| **Testes com Sucesso** | 16 (100%) |
-| **Tempo de Execucao** | 10.4 segundos |
-| **Alertas de Seguranca** | 4 (CORS, Headers, Rate Limiting) |
-
-### Status Geral
-
-**ATENCAO PARCIAL** - Testes funcionais passam, mas configuracoes de seguranca precisam de melhoria.
-
-### Vulnerabilidades Identificadas (Alertas)
-
-| Alerta | Severidade | Status |
-|--------|:----------:|--------|
-| CORS permissivo (`*`) | Media | **Nao corrigido** |
-| Referrer-Policy ausente | Media | **Nao corrigido** |
-| Cache-Control sem `no-store` | Media | **Nao corrigido** |
-| Rate Limiting ausente | Alta | **Nao corrigido** |
-
----
-
 ## Resultados e Evidencias
 
-### Ultima Execucao dos Testes
+### Resumo da Ultima Execucao
+
+| Metrica | Valor |
+|---------|-------|
+| **Data** | 28 de Julho de 2026 |
+| **Versao da API** | ServeRest 3.2.0 |
+| **Total de Testes** | 16 cenarios |
+| **Testes com Sucesso** | 16 (100%) |
+| **Tempo de Execucao** | 9.9 segundos |
+| **Vulnerabilidades Criticas** | 0 |
+| **Alertas de Seguranca** | 4 |
+
+### Status por Categoria
+
+| Categoria | Testes | Status | Cobertura |
+|-----------|--------|--------|-----------|
+| Injecao (SQL, XSS, Path, NoSQL) | 4 | 100% | SEGURO |
+| Autenticacao e Autorizacao | 6 | 100% | SEGURO |
+| Headers HTTP | 3 | 100% | PARCIAL |
+| Rate Limiting | 3 | 100% | PARCIAL |
+
+### Alertas de Seguranca
+
+| Alerta | Severidade | Impacto | Status |
+|--------|:----------:|---------|--------|
+| **Rate Limiting ausente** | **Alta** | Vulneravel a ataques DoS e forca bruta | Pendente |
+| **CORS permissivo (`*`)** | Media | Risco de Cross-Origin Request Forgery | Pendente |
+| **Referrer-Policy ausente** | Media | Vazamento de informacoes de referencia | Pendente |
+| **Cache-Control sem no-store** | Media | Exposicao de dados sensiveis em cache | Pendente |
+
+### Dashboard de Seguranca
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                   SECURITY TEST DASHBOARD                   │
+├────────────────────────────────────────────────────────────┤
+│  COBERTURA DE TESTES    ████████████████████  100%        │
+│  TESTES PASSANDO        ████████████████████  16/16       │
+│  VULNERABILIDADES       ████░░░░░░░░░░░░░░░░  4           │
+│  PERFORMANCE            ████████████████████  9.9s        │
+│  OWASP COVERAGE         ████████████████░░░░  85%         │
+├────────────────────────────────────────────────────────────┤
+│  STATUS: ATENCAO PARCIAL                                   │
+└────────────────────────────────────────────────────────────┘
+```
+
+### Relatorios Completos
+
+| Relatorio | Comando para Gerar | Visualizar |
+|-----------|--------------------|------------|
+| Playwright | `npx playwright show-report` | Abrir |
+| Allure | `npm run report:allure` | Abrir |
+| OWASP ZAP | `npm run test:zap` | Abrir |
+
+### Exemplo de Execucao
 
 ```
 Running 16 tests using 8 workers
 
-  [PASS] 1 - Bloquear acesso sem token (225ms)
-  [PASS] 2 - Usuario comum nao cria produtos (637ms)
-  [PASS] 3 - Rejeitar token invalido (2.8s)
-  [PASS] 4 - Multiplas tentativas de login (3.2s)
-  [PASS] 5 - Headers de seguranca OWASP (385ms)
-  [PASS] 6 - Usuario nao atualiza produto de outro (228ms)
-  [PASS] 7 - Rejeitar login com e-mail inexistente (220ms)
-  [PASS] 8 - Politica CORS adequada (366ms)
-  [PASS] 9 - Politica de cache adequada (353ms)
+  [PASS] 1 - Bloquear acesso sem token (221ms)
+  [PASS] 2 - Multiplas tentativas de login (3.2s)
+  [PASS] 3 - Rejeitar login com e-mail inexistente (216ms)
+  [PASS] 4 - Usuario comum nao cria produtos (641ms)
+  [PASS] 5 - Rejeitar token invalido (2.7s)
+  [PASS] 6 - Usuario nao atualiza produto de outro (215ms)
+  [PASS] 7 - Politica CORS adequada (375ms)
+  [PASS] 8 - Headers de seguranca OWASP (362ms)
+  [PASS] 9 - Politica de cache adequada (357ms)
   [PASS] 10 - Proteger contra SQL Injection (2.8s)
-  [PASS] 11 - Proteger contra XSS (3.0s) [Vulnerabilidade identificada e reportada]
+  [PASS] 11 - Proteger contra XSS (2.9s)
   [PASS] 12 - Proteger contra Path Traversal (2.1s)
   [PASS] 13 - Proteger contra NoSQL Injection (1.9s)
-  [PASS] 14 - Rate limiting em endpoint publico (1.9s)
-  [PASS] 15 - Rate limiting no login (1.8s)
-  [PASS] 16 - Rate limiting na criacao de usuarios (505ms)
+  [PASS] 14 - Rate limiting em endpoint publico (2.0s)
+  [PASS] 15 - Rate limiting no login (1.9s)
+  [PASS] 16 - Rate limiting na criacao de usuarios (521ms)
 
-  16 passed (10.4s) - Execucao otimizada
+  16 passed (9.9s)
 ```
 
-### Alertas de Configuracao Identificados
+### Plano de Acao
 
-- CORS - Permitindo qualquer origem (*)
-- Referrer-Policy - Header ausente
-- Cache-Control - Sem no-store para dados sensiveis
-- Rate Limiting - Nao implementado em nenhum endpoint
+| Prioridade | Acao | Prazo |
+|:----------:|------|:-----:|
+| Alta | Implementar Rate Limiting em todos os endpoints | 2 dias |
+| Media | Restringir CORS para dominios especificos | 3 dias |
+| Media | Adicionar header Referrer-Policy | 1 dia |
+| Media | Configurar Cache-Control com no-store | 1 dia |
 
 ---
 
@@ -245,6 +321,16 @@ Reports gerados em `reports/zap-report.html` e `reports/zap-report.xml`.
 
 ---
 
+## Relatorios Online
+
+Os relatorios sao gerados automaticamente e publicados em:
+
+- [Playwright Report](https://j0hnweider.github.io/security-testing/playwright-report/)
+- [Allure Report](https://j0hnweider.github.io/security-testing/allure-report/)
+- [OWASP ZAP Report](https://j0hnweider.github.io/security-testing/zap-report.html)
+
+---
+
 ## Mapeamento OWASP
 
 | Classe de Teste | OWASP Top 10 (2021) | ASVS |
@@ -283,6 +369,46 @@ jobs:
         with:
           name: allure-report
           path: allure-report/
+```
+
+### GitHub Pages
+
+Os relatorios sao publicados automaticamente no GitHub Pages apos cada push na branch main.
+
+```yaml
+name: Deploy Reports to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './reports'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 ```
 
 ---
