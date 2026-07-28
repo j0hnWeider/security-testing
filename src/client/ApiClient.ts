@@ -32,6 +32,16 @@ export class ApiClient {
     password: string,
   ): Promise<{ authorization: string }> {
     const response = await this.post("/login", { email, password }, false);
+
+    // Verifica se a resposta e JSON valido antes de tentar parsear
+    const contentType = response.headers()["content-type"] || "";
+    if (!contentType.includes("application/json")) {
+      const text = await response.text();
+      throw new Error(
+        `Login falhou: API retornou ${response.status()} - ${text.substring(0, 100)}`,
+      );
+    }
+
     const data = (await response.json()) as {
       authorization?: string;
       message?: string;
@@ -44,7 +54,7 @@ export class ApiClient {
     }
 
     if (!data.authorization) {
-      throw new Error("Resposta de login nao contem token");
+      throw new Error("Login falhou: Token nao retornado na resposta");
     }
 
     this.token = data.authorization;

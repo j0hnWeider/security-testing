@@ -45,47 +45,6 @@ Repositorio focado exclusivamente em testes de seguranca automatizados contra a 
 
 ---
 
-## Relatorio de Testes
-
-### Ultima Execucao
-
-| Metrica | Resultado |
-|---------|-----------|
-| **Total de Testes** | 16 cenarios |
-| **Taxa de Sucesso** | 100% (16/16) |
-| **Tempo de Execucao** | 9.9 segundos |
-| **Vulnerabilidades Criticas** | 0 |
-| **Alertas de Seguranca** | 4 |
-
-### Dashboard de Seguranca
-
-```
-┌────────────────────────────────────────────────────────────┐
-│                   SECURITY TEST DASHBOARD                   │
-├────────────────────────────────────────────────────────────┤
-│                                                            │
-│  COBERTURA DE TESTES    ████████████████████  100%        │
-│  TESTES PASSANDO        ████████████████████  16/16       │
-│  VULNERABILIDADES       ████░░░░░░░░░░░░░░░░  4           │
-│  PERFORMANCE            ████████████████████  9.9s        │
-│  OWASP COVERAGE         ████████████████░░░░  85%         │
-│                                                            │
-├────────────────────────────────────────────────────────────┤
-│  STATUS: ATENCAO PARCIAL                                   │
-└────────────────────────────────────────────────────────────┘
-```
-
-### Alertas Identificados
-
-| Alerta | Severidade | Endpoint | Status |
-|--------|:----------:|----------|--------|
-| Rate Limiting ausente | Alta | /produtos, /login, /usuarios | Nao corrigido |
-| CORS permissivo (`*`) | Media | Global | Nao corrigido |
-| Referrer-Policy ausente | Media | Global | Nao corrigido |
-| Cache-Control sem no-store | Media | Dados sensiveis | Nao corrigido |
-
----
-
 ## Matriz de Cobertura
 
 | Categoria | ID | Vulnerabilidade Alvo | Status |
@@ -113,61 +72,57 @@ Repositorio focado exclusivamente em testes de seguranca automatizados contra a 
 
 ## Resultados e Evidencias
 
-### Resumo da Ultima Execucao
+### Resumo Executivo
+
+**Data da Execucao:** 28 de Julho de 2026
+**Versao da API:** ServeRest 3.2.0
+**Status Geral:** ATENCAO PARCIAL - Testes funcionais passam, mas configuracoes de seguranca precisam de melhoria.
 
 | Metrica | Valor |
 |---------|-------|
-| **Data** | 28 de Julho de 2026 |
-| **Versao da API** | ServeRest 3.2.0 |
-| **Total de Testes** | 16 cenarios |
-| **Testes com Sucesso** | 16 (100%) |
-| **Tempo de Execucao** | 9.9 segundos |
-| **Vulnerabilidades Criticas** | 0 |
-| **Alertas de Seguranca** | 4 |
+| Total de Testes | 16 cenarios |
+| Testes com Sucesso | 16 (100%) |
+| Tempo de Execucao | 9.9 segundos |
+| Vulnerabilidades Criticas | 0 |
+| Alertas de Seguranca | 4 |
 
-### Status por Categoria
+---
 
-| Categoria | Testes | Status | Cobertura |
-|-----------|--------|--------|-----------|
+### Status por Categoria de Teste
+
+| Categoria | Testes | Resultado | Classificacao |
+|-----------|:------:|:---------:|:-------------:|
 | Injecao (SQL, XSS, Path, NoSQL) | 4 | 100% | SEGURO |
 | Autenticacao e Autorizacao | 6 | 100% | SEGURO |
 | Headers HTTP | 3 | 100% | PARCIAL |
 | Rate Limiting | 3 | 100% | PARCIAL |
 
-### Alertas de Seguranca
+**Legenda:** SEGURO = Vulnerabilidade nao encontrada | PARCIAL = Configuracao necessita ajuste | CRITICO = Vulnerabilidade confirmada
 
-| Alerta | Severidade | Impacto | Status |
-|--------|:----------:|---------|--------|
-| **Rate Limiting ausente** | **Alta** | Vulneravel a ataques DoS e forca bruta | Pendente |
-| **CORS permissivo (`*`)** | Media | Risco de Cross-Origin Request Forgery | Pendente |
-| **Referrer-Policy ausente** | Media | Vazamento de informacoes de referencia | Pendente |
-| **Cache-Control sem no-store** | Media | Exposicao de dados sensiveis em cache | Pendente |
+---
+
+### Alertas de Seguranca Identificados
+
+| ID | Alerta | Severidade | Endpoint(s) | Impacto | Status |
+|:--:|--------|:----------:|-------------|---------|:------:|
+| AS-01 | Rate Limiting ausente | **Alta** | /produtos, /login, /usuarios | Vulneravel a ataques de negacao de servico (DoS) e forca bruta | Pendente |
+| AS-02 | CORS permissivo (`*`) | Media | Global (todas as origens) | Risco de Cross-Origin Request Forgery e vazamento de dados | Pendente |
+| AS-03 | Referrer-Policy ausente | Media | Global (todos os endpoints) | Possivel vazamento de informacoes de referencia na URL | Pendente |
+| AS-04 | Cache-Control sem no-store | Media | Endpoints com dados sensiveis | Exposicao de dados em navegadores compartilhados ou proxies | Pendente |
+
+---
 
 ### Dashboard de Seguranca
 
-```
-┌────────────────────────────────────────────────────────────┐
-│                   SECURITY TEST DASHBOARD                   │
-├────────────────────────────────────────────────────────────┤
-│  COBERTURA DE TESTES    ████████████████████  100%        │
-│  TESTES PASSANDO        ████████████████████  16/16       │
-│  VULNERABILIDADES       ████░░░░░░░░░░░░░░░░  4           │
-│  PERFORMANCE            ████████████████████  9.9s        │
-│  OWASP COVERAGE         ████████████████░░░░  85%         │
-├────────────────────────────────────────────────────────────┤
-│  STATUS: ATENCAO PARCIAL                                   │
-└────────────────────────────────────────────────────────────┘
-```
+<div align="center">
+  <img src="imagem/Dashboard de Seguranca.png" alt="Dashboard de Seguranca" width="100%" style="max-width: 800px; border-radius: 8px;">
+  <br>
+  <em>Dashboard de Seguranca - Resumo visual dos indicadores da ultima execucao</em>
+</div>
 
-### Relatorios Completos
+---
 
-| Relatorio | Comando para Gerar | Visualizar |
-|-----------|--------------------|------------|
-| Playwright | `npx playwright show-report` | Abrir |
-| Allure | `npm run report:allure` | Abrir |
-| OWASP ZAP | `npm run test:zap` | Abrir |
-
-### Exemplo de Execucao
+### Log de Execucao dos Testes
 
 ```
 Running 16 tests using 8 workers
@@ -192,14 +147,34 @@ Running 16 tests using 8 workers
   16 passed (9.9s)
 ```
 
-### Plano de Acao
+---
 
-| Prioridade | Acao | Prazo |
-|:----------:|------|:-----:|
-| Alta | Implementar Rate Limiting em todos os endpoints | 2 dias |
-| Media | Restringir CORS para dominios especificos | 3 dias |
-| Media | Adicionar header Referrer-Policy | 1 dia |
-| Media | Configurar Cache-Control com no-store | 1 dia |
+### Relatorios Completos
+
+| Relatorio | Comando | Saida |
+|-----------|---------|-------|
+| Playwright HTML Report | `npx playwright show-report` | `playwright-report/index.html` |
+| Allure Report | `npm run report:allure` | `allure-report/index.html` |
+| OWASP ZAP Report | `npm run test:zap` | `reports/zap-report.html` |
+| Cobertura | `npm run coverage` | `coverage/` |
+
+**Relatorios Online (GitHub Pages):**
+- [Playwright Report](https://j0hnweider.github.io/security-testing/playwright-report/)
+- [Allure Report](https://j0hnweider.github.io/security-testing/allure-report/)
+- [OWASP ZAP Report](https://j0hnweider.github.io/security-testing/zap-report.html)
+
+---
+
+### Plano de Acao Recomendado
+
+| Prioridade | Acao | Endpoints Afetados | Prazo Estimado | Esforco |
+|:----------:|------|--------------------|:--------------:|:-------:|
+| **ALTA** | Implementar Rate Limiting | /produtos, /login, /usuarios | 2 dias | Medio |
+| MEDIA | Restringir CORS para dominios especificos | Global | 3 dias | Baixo |
+| MEDIA | Adicionar header Referrer-Policy | Global | 1 dia | Baixo |
+| MEDIA | Configurar Cache-Control com no-store | Dados sensiveis | 1 dia | Baixo |
+
+**Nota:** As correcoes de prioridade MEDIA envolvem ajustes de configuracao no servidor web ou framework, enquanto a prioridade ALTA requer implementacao de logica de negocios para limitacao de taxa de requisicoes.
 
 ---
 
@@ -321,16 +296,6 @@ Reports gerados em `reports/zap-report.html` e `reports/zap-report.xml`.
 
 ---
 
-## Relatorios Online
-
-Os relatorios sao gerados automaticamente e publicados em:
-
-- [Playwright Report](https://j0hnweider.github.io/security-testing/playwright-report/)
-- [Allure Report](https://j0hnweider.github.io/security-testing/allure-report/)
-- [OWASP ZAP Report](https://j0hnweider.github.io/security-testing/zap-report.html)
-
----
-
 ## Mapeamento OWASP
 
 | Classe de Teste | OWASP Top 10 (2021) | ASVS |
@@ -369,46 +334,6 @@ jobs:
         with:
           name: allure-report
           path: allure-report/
-```
-
-### GitHub Pages
-
-Os relatorios sao publicados automaticamente no GitHub Pages apos cada push na branch main.
-
-```yaml
-name: Deploy Reports to GitHub Pages
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './reports'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
 ```
 
 ---
