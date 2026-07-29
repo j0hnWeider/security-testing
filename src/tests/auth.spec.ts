@@ -335,7 +335,8 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
     const uniqueId = Date.now();
     const productName = `Produto do Admin ${uniqueId}`;
 
-    let productId: string;
+    // CORREÇÃO DO ERRO TS2454: Inicializar a variável com uma string vazia
+    let productId: string = ""; 
     let createAttempts = 0;
     const maxAttempts = 3;
 
@@ -364,11 +365,12 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       }
     }
 
+    // 2. Verificação de segurança (Garante que o ID não está vazio)
     if (!productId) {
       throw new Error("Não foi possível obter o ID do produto.");
     }
 
-    // 2. Criar (ou obter) um usuário comum
+    // 3. Criar (ou obter) um usuário comum
     let commonUser = await createCommonUser().catch(() => null);
 
     if (!commonUser) {
@@ -400,7 +402,7 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       };
     }
 
-    // 3. Usuário comum tenta atualizar o produto do Admin
+    // 4. Usuário comum tenta atualizar o produto do Admin
     const response: APIResponse = await commonUser.client.put(`/produtos/${productId}`, {
       nome: "Hackeado pelo usuário comum",
       preco: 1,
@@ -418,7 +420,7 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       "application/json",
     );
 
-    // 4. Validação: Deve ser barrado (403 Forbidden)
+    // 5. Validação: Deve ser barrado (403 Forbidden)
     expect(response.status()).toBe(403);
 
     await commonUser.apiContext.dispose();
