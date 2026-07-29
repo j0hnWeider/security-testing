@@ -18,8 +18,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '24'
+  NODE_VERSION: '22'
   API_BASE_URL: 'https://serverest.dev'
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true' # Silencia o warning caso rode em Node >20
 
 jobs:
   lint:
@@ -63,8 +64,10 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install chromium
 
-      - name: Create reports directory
-        run: mkdir -p playwright-report allure-results test-results
+      - name: Clean previous reports
+        run: |
+          rm -rf playwright-report allure-results test-results
+          mkdir -p playwright-report allure-results test-results
 
       - name: Run Security Tests (Shard ${{ matrix.shard }}/4)
         run: npx playwright test --shard=${{ matrix.shard }}/4
