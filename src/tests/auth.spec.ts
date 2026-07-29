@@ -21,6 +21,7 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
   let adminApiContext: APIRequestContext;
   let adminEmail: string;
 
+  // A fixture agora CRIA um novo admin, em vez de tentar logar com um fixo.
   test.beforeAll(async () => {
     const auth = await createAuthenticatedClient();
     adminClient = auth.client;
@@ -142,11 +143,23 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
         fallbackApiContext,
         process.env.API_BASE_URL || "https://serverest.dev",
       );
-      await fallbackClient.login("fulano@qa.com", "teste");
+      
+      // Cria um novo usuário comum na hora (para não depender de "fulano@qa.com")
+      const timestamp = Date.now();
+      const uniqueEmail = `fallback_${timestamp}@qa.com`;
+      
+      await fallbackClient.post("/usuarios", {
+        nome: "Fallback User",
+        email: uniqueEmail,
+        password: "Teste@123",
+        administrador: "false",
+      });
+
+      await fallbackClient.login(uniqueEmail, "Teste@123");
       commonUser = {
         client: fallbackClient,
-        email: "fulano@qa.com",
-        password: "teste",
+        email: uniqueEmail,
+        password: "Teste@123",
         apiContext: fallbackApiContext,
       };
     }
@@ -322,16 +335,38 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
     const uniqueId = Date.now();
     const productName = `Produto do Admin ${uniqueId}`;
 
-    // 1. Criar um produto com o Admin
-    const createResponse = await adminClient.post("/produtos", {
-      nome: productName,
-      preco: 150,
-      descricao: "Propriedade do Admin",
-      quantidade: 10
-    });
-    
-    expect(createResponse.status()).toBe(201);
-    const productId = (await createResponse.json())._id;
+    let productId: string;
+    let createAttempts = 0;
+    const maxAttempts = 3;
+
+    // 1. Tenta criar um produto com o Admin (com retry em caso de 503/erro de servidor)
+    while (createAttempts < maxAttempts) {
+      createAttempts++;
+      const createResponse = await adminClient.post("/produtos", {
+        nome: productName,
+        preco: 150,
+        descricao: "Propriedade do Admin",
+        quantidade: 10
+      });
+
+      if (createResponse.status() === 201) {
+        productId = (await createResponse.json())._id;
+        break;
+      } else if (createResponse.status() === 503) {
+        console.warn(`⚠️ Servidor indisponível (503). Tentativa ${createAttempts}/${maxAttempts}. Aguardando...`);
+        if (createAttempts === maxAttempts) {
+          throw new Error(`Falha ao criar produto após ${maxAttempts} tentativas devido a 503 (Service Unavailable).`);
+        }
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Espera 2s antes de tentar de novo
+      } else {
+        // Se for qualquer outro erro (ex: 400), falha imediatamente
+        throw new Error(`Falha ao criar produto: ${createResponse.status()} - ${await createResponse.text()}`);
+      }
+    }
+
+    if (!productId) {
+      throw new Error("Não foi possível obter o ID do produto.");
+    }
 
     // 2. Criar (ou obter) um usuário comum
     let commonUser = await createCommonUser().catch(() => null);
@@ -345,11 +380,22 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
         fallbackApiContext,
         process.env.API_BASE_URL || "https://serverest.dev",
       );
-      await fallbackClient.login("fulano@qa.com", "teste");
+      
+      const fallbackTimestamp = Date.now();
+      const fallbackEmail = `fallback2_${fallbackTimestamp}@qa.com`;
+      
+      await fallbackClient.post("/usuarios", {
+        nome: "Fallback User",
+        email: fallbackEmail,
+        password: "Teste@123",
+        administrador: "false",
+      });
+
+      await fallbackClient.login(fallbackEmail, "Teste@123");
       commonUser = {
         client: fallbackClient,
-        email: "fulano@qa.com",
-        password: "teste",
+        email: fallbackEmail,
+        password: "Teste@123",
         apiContext: fallbackApiContext,
       };
     }
