@@ -318,9 +318,13 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
     AllureHelper.addFeature("Segurança - Autorização");
     AllureHelper.addStory("Escalação de Privilégio Horizontal");
 
-    // 1. Criar um produto com o Admin para garantir que o ID existe
+    // Gera um timestamp único para garantir que o produto seja novo e não cause conflito 400
+    const uniqueId = Date.now();
+    const productName = `Produto do Admin ${uniqueId}`;
+
+    // 1. Criar um produto com o Admin
     const createResponse = await adminClient.post("/produtos", {
-      nome: "Produto do Admin",
+      nome: productName,
       preco: 150,
       descricao: "Propriedade do Admin",
       quantidade: 10
