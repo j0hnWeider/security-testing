@@ -64,12 +64,10 @@ Na última execução, a suíte rodou 16 cenários e evidenciou falhas críticas
 
 ## Sobre a implementação técnica
 
-Este projeto foi construído inteiramente com **Playwright e TypeScript**, com foco em boas práticas de engenharia de software:
-
-- **Organização de código:** Separação clara entre o cliente HTTP, fixtures de dados e os specs de teste, o que facilita a manutenção e escalabilidade.
-- **Integração contínua:** Pipeline configurada no GitHub Actions que executa a suíte automaticamente a cada push.
-- **Métricas:** Uso do `nyc` para rastrear a cobertura de código (atualmente em 84,9%), garantindo que o mínimo de linhas fiquem sem teste.
-- **Geração de evidências:** Os testes não só rodam, como geram relatórios HTML interativos que documentam claramente o comportamento da API e as falhas encontradas.
+Este projeto foi construído inteiramente com Playwright e TypeScript, com foco em boas práticas de engenharia de software:
+- Criação de dados sob demanda (com timestamp) para garantir isolamento e idempotência em pipelines paralelas.
+- Tratamento robusto de erros com retries para APIs públicas instáveis.
+- Geração de relatórios de evidência (Allure) que priorizam o diagnóstico, em vez de apenas status de Pass/Fail.
 
 ---
 
