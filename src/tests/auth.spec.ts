@@ -305,26 +305,72 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
   });
 
   // --------------------------------------------------------------------
-  // SEC-AUTH-06: Atualizar produto de outro usuário
+  // SEC-AUTH-06: Usuário comum não deve atualizar produto criado por admin
   // --------------------------------------------------------------------
-  test("SEC-AUTH-06: Usuário não deve atualizar produto de outro", async () => {
-    AllureHelper.addSeverity("normal");
+  test("SEC-AUTH-06: Usuário comum não deve atualizar produto criado por admin", async () => {
+    AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "auth", "rbac", "horizontal-privilege");
     AllureHelper.addDescription(
-      "Valida que um usuário não pode modificar recursos de outro usuário " +
-        "(Privilege Escalation Horizontal).",
+      "Cria um produto com o Admin, obtém o ID, e tenta atualizá-lo " +
+      "usando um usuário COMUM. Deve retornar 403 Forbidden."
     );
     AllureHelper.addTestCaseId("SEC-AUTH-06");
     AllureHelper.addFeature("Segurança - Autorização");
     AllureHelper.addStory("Escalação de Privilégio Horizontal");
 
-    const response: APIResponse = await adminClient.put("/produtos/999999999", {
-      nome: "Tentativa de acesso a recurso alheio",
-      preco: 100,
-      descricao: "Teste",
-      quantidade: 1,
+    // 1. Criar um produto com o Admin para garantir que o ID existe
+    const createResponse = await adminClient.post("/produtos", {
+      nome: "Produto do Admin",
+      preco: 150,
+      descricao: "Propriedade do Admin",
+      quantidade: 10
+    });
+    
+    expect(createResponse.status()).toBe(201);
+    const productId = (await createResponse.json())._id;
+
+    // 2. Criar (ou obter) um usuário comum
+    let commonUser = await createCommonUser().catch(() => null);
+
+    if (!commonUser) {
+      // Fallback caso a fixture falhe
+      const fallbackApiContext = await request.newContext({
+        baseURL: process.env.API_BASE_URL || "https://serverest.dev",
+      });
+      const fallbackClient = new ApiClient(
+        fallbackApiContext,
+        process.env.API_BASE_URL || "https://serverest.dev",
+      );
+      await fallbackClient.login("fulano@qa.com", "teste");
+      commonUser = {
+        client: fallbackClient,
+        email: "fulano@qa.com",
+        password: "teste",
+        apiContext: fallbackApiContext,
+      };
+    }
+
+    // 3. Usuário comum tenta atualizar o produto do Admin
+    const response: APIResponse = await commonUser.client.put(`/produtos/${productId}`, {
+      nome: "Hackeado pelo usuário comum",
+      preco: 1,
+      descricao: "Tentativa de escalação",
+      quantidade: 999
     });
 
-    expect([400, 403, 404]).toContain(response.status());
+    AllureHelper.addAttachment(
+      "Resposta do Teste de Escalação Horizontal",
+      JSON.stringify(
+        { status: response.status(), body: await response.text() },
+        null,
+        2,
+      ),
+      "application/json",
+    );
+
+    // 4. Validação: Deve ser barrado (403 Forbidden)
+    expect(response.status()).toBe(403);
+
+    await commonUser.apiContext.dispose();
   });
 });
