@@ -10,11 +10,11 @@
 **Portfólio de Automação e Segurança em APIs**
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Playwright-45BA63?style=flat-square&logo=playwright&logoColor=white"/>
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white"/>
-  <img src="https://img.shields.io/badge/OWASP_Top_10-000000?style=flat-square"/>
-  <img src="https://img.shields.io/github/license/j0hnWeider/security-testing?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Status-Em%20Estudo-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Playwright-45BA63?style=for-the-badge&logo=playwright&logoColor=white"/>
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white"/>
+  <img src="https://img.shields.io/badge/OWASP_Top_10-000000?style=for-the-badge"/>
+  <img src="https://img.shields.io/github/license/j0hnWeider/security-testing?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Status-Em%20Estudo-blue?style=for-the-badge"/>
 </p>
 
 </div>
