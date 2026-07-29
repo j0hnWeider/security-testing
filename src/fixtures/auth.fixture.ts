@@ -1,109 +1,89 @@
 import { request, APIRequestContext } from "@playwright/test";
 import { ApiClient } from "../client/ApiClient";
-import { faker } from "@faker-js/faker";
 
-export interface AuthContext {
+const API_BASE_URL = process.env.API_BASE_URL || "https://serverest.dev";
+
+/**
+ * Cria um novo usuário administrador na API e retorna um cliente autenticado.
+ * Isso garante que o teste não dependa de um usuário pré-existente.
+ */
+export async function createAuthenticatedClient(): Promise<{
   client: ApiClient;
   apiContext: APIRequestContext;
   email: string;
   password: string;
-  token?: string;
+}> {
+  const apiContext = await request.newContext({
+    baseURL: API_BASE_URL,
+  });
+
+  const client = new ApiClient(apiContext, API_BASE_URL);
+
+  // Gera credenciais únicas para evitar conflitos
+  const timestamp = Date.now();
+  const uniqueEmail = `admin_${timestamp}@qa.com`;
+  const password = `Teste@${timestamp}`;
+
+  // 1. Cadastra um novo usuário administrador
+  const signUpResponse = await client.post("/usuarios", {
+    nome: "Admin Automatizado",
+    email: uniqueEmail,
+    password: password,
+    administrador: "true",
+  });
+
+  // Se o cadastro falhar por qualquer motivo, lança erro claro
+  if (signUpResponse.status() !== 201) {
+    const body = await signUpResponse.text();
+    throw new Error(
+      `Falha ao criar usuário admin: ${signUpResponse.status()} - ${body}`
+    );
+  }
+
+  // 2. Realiza o login com o usuário recém-criado
+  await client.login(uniqueEmail, password);
+
+  return { client, apiContext, email: uniqueEmail, password };
 }
 
-export interface UserData {
+/**
+ * Cria um novo usuário comum e retorna um cliente autenticado.
+ */
+export async function createCommonUser(): Promise<{
+  client: ApiClient;
+  apiContext: APIRequestContext;
   email: string;
   password: string;
-  nome: string;
-}
-
-export async function createAuthenticatedClient(): Promise<AuthContext> {
-  const baseUrl = process.env.API_BASE_URL || "https://serverest.dev";
-  const email = process.env.TEST_USER_EMAIL || "admin@teste.com";
-  const password = process.env.TEST_PASSWORD || "123456";
-
-  const apiContext = await request.newContext({
-    baseURL: baseUrl,
-  });
-
-  const client = new ApiClient(apiContext, baseUrl);
-
+} | null> {
   try {
-    await client.login(email, password);
-  } catch (error) {
-    console.warn("Login falhou, criando usuario admin...");
-    await createAdminUser(client, email, password);
-    await client.login(email, password);
-  }
+    const apiContext = await request.newContext({
+      baseURL: API_BASE_URL,
+    });
 
-  return {
-    client,
-    apiContext,
-    email,
-    password,
-  };
-}
+    const client = new ApiClient(apiContext, API_BASE_URL);
 
-export async function createCommonUser(): Promise<AuthContext> {
-  const baseUrl = process.env.API_BASE_URL || "https://serverest.dev";
-  const email = faker.internet.email();
-  const password = "teste123";
+    const timestamp = Date.now();
+    const uniqueEmail = `common_${timestamp}@qa.com`;
+    const password = `Common@${timestamp}`;
 
-  const apiContext = await request.newContext({
-    baseURL: baseUrl,
-  });
-
-  const client = new ApiClient(apiContext, baseUrl);
-
-  await createUser(client, email, password, faker.person.fullName());
-  await client.login(email, password);
-
-  return {
-    client,
-    apiContext,
-    email,
-    password,
-  };
-}
-
-async function createAdminUser(
-  client: ApiClient,
-  email: string,
-  password: string,
-): Promise<void> {
-  await client.post(
-    "/usuarios",
-    {
-      nome: "Admin Teste",
-      email: email,
-      password: password,
-      administrador: "true",
-    },
-    false,
-  );
-}
-
-async function createUser(
-  client: ApiClient,
-  email: string,
-  password: string,
-  nome: string,
-): Promise<void> {
-  await client.post(
-    "/usuarios",
-    {
-      nome: nome,
-      email: email,
+    // 1. Cadastra um novo usuário comum
+    const signUpResponse = await client.post("/usuarios", {
+      nome: "Usuario Comum Automatizado",
+      email: uniqueEmail,
       password: password,
       administrador: "false",
-    },
-    false,
-  );
-}
+    });
 
-export function getBaseUrl(): string {
-  const url = process.env.API_BASE_URL;
-  if (!url || url.trim() === "") {
-    throw new Error("API_BASE_URL nao configurada no ambiente");
+    if (signUpResponse.status() !== 201) {
+      await apiContext.dispose();
+      return null;
+    }
+
+    // 2. Realiza o login
+    await client.login(uniqueEmail, password);
+
+    return { client, apiContext, email: uniqueEmail, password };
+  } catch (error) {
+    return null;
   }
-  return url;
 }
