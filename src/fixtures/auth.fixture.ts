@@ -1,60 +1,74 @@
 import { request, APIRequestContext } from "@playwright/test";
 import { ApiClient } from "../client/ApiClient";
-import { faker } from "@faker-js/faker";
 
-export interface AuthContext {
+export interface AuthFixture {
   client: ApiClient;
   apiContext: APIRequestContext;
   email: string;
   password: string;
-  token?: string;
 }
 
-export interface UserData {
+export interface CommonUserFixture {
+  client: ApiClient;
+  apiContext: APIRequestContext;
   email: string;
   password: string;
-  nome: string;
 }
 
-export async function createAuthenticatedClient(): Promise<AuthContext> {
-  const baseUrl = process.env.API_BASE_URL || "https://serverest.dev";
-  const email = process.env.TEST_USER_EMAIL || "admin@teste.com";
-  const password = process.env.TEST_PASSWORD || "123456";
+export async function createAuthenticatedClient(): Promise<AuthFixture> {
+  const baseURL = process.env.API_BASE_URL || "https://serverest.dev";
+  const apiContext = await request.newContext({ baseURL });
+  const client = new ApiClient(apiContext, baseURL);
 
-  const apiContext = await request.newContext({
-    baseURL: baseUrl,
-  });
+  const timestamp = Date.now();
+  const email = `admin_${timestamp}@qa.com`;
+  const password = "Teste@123";
 
-  const client = new ApiClient(apiContext, baseUrl);
+  const maxRetries = 3;
+  let attempt = 0;
 
-  try {
-    await client.login(email, password);
-  } catch (error) {
-    console.warn("Login falhou, criando usuario admin...");
-    await createAdminUser(client, email, password);
-    await client.login(email, password);
+  while (attempt < maxRetries) {
+    attempt++;
+    try {
+      const signUpResponse = await client.post("/usuarios", {
+        nome: "Admin Teste",
+        email: email,
+        password: password,
+        administrador: "true",
+      });
+
+      if (signUpResponse.status() === 503) {
+        console.warn(
+          `[AUTH] Servidor indisponível (503). Tentativa ${attempt}/${maxRetries}. Aguardando...`,
+        );
+        if (attempt === maxRetries) {
+          throw new Error(
+            `Falha ao criar usuário admin: 503 Service Unavailable após ${maxRetries} tentativas`,
+          );
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+        continue;
+      }
+
+      if (signUpResponse.status() !== 201) {
+        const body = await signUpResponse.text();
+        throw new Error(
+          `Falha ao criar usuário admin: ${signUpResponse.status()} - ${body}`,
+        );
+      }
+
+      break;
+    } catch (error: unknown) {
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      console.warn(
+        `[AUTH] Erro na tentativa ${attempt}. Tentando novamente...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+    }
   }
 
-  return {
-    client,
-    apiContext,
-    email,
-    password,
-  };
-}
-
-export async function createCommonUser(): Promise<AuthContext> {
-  const baseUrl = process.env.API_BASE_URL || "https://serverest.dev";
-  const email = faker.internet.email();
-  const password = "teste123";
-
-  const apiContext = await request.newContext({
-    baseURL: baseUrl,
-  });
-
-  const client = new ApiClient(apiContext, baseUrl);
-
-  await createUser(client, email, password, faker.person.fullName());
   await client.login(email, password);
 
   return {
@@ -65,45 +79,66 @@ export async function createCommonUser(): Promise<AuthContext> {
   };
 }
 
-async function createAdminUser(
-  client: ApiClient,
-  email: string,
-  password: string,
-): Promise<void> {
-  await client.post(
-    "/usuarios",
-    {
-      nome: "Admin Teste",
-      email: email,
-      password: password,
-      administrador: "true",
-    },
-    false,
-  );
-}
+export async function createCommonUser(): Promise<CommonUserFixture> {
+  const baseURL = process.env.API_BASE_URL || "https://serverest.dev";
+  const apiContext = await request.newContext({ baseURL });
+  const client = new ApiClient(apiContext, baseURL);
 
-async function createUser(
-  client: ApiClient,
-  email: string,
-  password: string,
-  nome: string,
-): Promise<void> {
-  await client.post(
-    "/usuarios",
-    {
-      nome: nome,
-      email: email,
-      password: password,
-      administrador: "false",
-    },
-    false,
-  );
-}
+  const timestamp = Date.now();
+  const email = `common_${timestamp}@qa.com`;
+  const password = "Teste@123";
 
-export function getBaseUrl(): string {
-  const url = process.env.API_BASE_URL;
-  if (!url || url.trim() === "") {
-    throw new Error("API_BASE_URL nao configurada no ambiente");
+  const maxRetries = 3;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    attempt++;
+    try {
+      const signUpResponse = await client.post("/usuarios", {
+        nome: "Usuario Comum",
+        email: email,
+        password: password,
+        administrador: "false",
+      });
+
+      if (signUpResponse.status() === 503) {
+        console.warn(
+          `[AUTH] Servidor indisponível (503). Tentativa ${attempt}/${maxRetries}. Aguardando...`,
+        );
+        if (attempt === maxRetries) {
+          throw new Error(
+            `Falha ao criar usuário comum: 503 Service Unavailable após ${maxRetries} tentativas`,
+          );
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+        continue;
+      }
+
+      if (signUpResponse.status() !== 201) {
+        const body = await signUpResponse.text();
+        throw new Error(
+          `Falha ao criar usuário comum: ${signUpResponse.status()} - ${body}`,
+        );
+      }
+
+      break;
+    } catch (error: unknown) {
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      console.warn(
+        `[AUTH] Erro na tentativa ${attempt}. Tentando novamente...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+    }
   }
-  return url;
+
+  await client.login(email, password);
+
+  return {
+    client,
+    apiContext,
+    email,
+    password,
+  };
 }

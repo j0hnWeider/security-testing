@@ -1,377 +1,138 @@
 [![Security Tests](https://github.com/j0hnWeider/security-testing/actions/workflows/security-tests.yml/badge.svg)](https://github.com/j0hnWeider/security-testing/actions/workflows/security-tests.yml)
 
 <div align="center">
-  <img src="imagem/banner.webp" alt="Security Testing Banner" width="100%" style="max-width: 900px; border-radius: 12px;">
-  <br>
+  <img src="imagem/banner.webp" alt="Security Testing Banner" width="100%" style="max-width: 800px; border-radius: 12px;">
 </div>
 
 <div align="center">
 
 # Security Testing
-
-**Laboratorio de Testes de Seguranca -- API ServeRest**
+**Portfólio de Automação e Segurança em APIs**
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Playwright-45BA63?style=flat-square&logo=playwright&logoColor=white"/>
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white"/>
-  <img src="https://img.shields.io/badge/OWASP_ZAP-00549E?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Allure-ED1C24?style=flat-square&logo=allure&logoColor=white"/>
-  <img src="https://img.shields.io/badge/OWASP_Top_10-000000?style=flat-square"/>
-  <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white"/>
-  <img src="https://img.shields.io/github/license/j0hnWeider/security-testing?style=flat-square"/>
-  <img src="https://img.shields.io/github/last-commit/j0hnWeider/security-testing?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Testes-16%20passando-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Cobertura-100%25-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Tempo-9.9s-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Vulnerabilidades-4-yellow?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Status-ATENCAO%20PARCIAL-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Playwright-45BA63?style=for-the-badge&logo=playwright&logoColor=white"/>
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white"/>
+  <img src="https://img.shields.io/badge/OWASP_Top_10-000000?style=for-the-badge"/>
+  <img src="https://img.shields.io/github/license/j0hnWeider/security-testing?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Status-Em%20Estudo-blue?style=for-the-badge"/>
 </p>
 
 </div>
 
 ---
 
-## Objetivo
+## Minha abordagem neste projeto
 
-Repositorio focado exclusivamente em testes de seguranca automatizados contra a API [ServeRest](https://serverest.dev). Diferente do QA Forge (que cobre multiplas camadas), este projeto aprofunda-se em vulnerabilidades reais seguindo o **OWASP Top 10**, **OWASP ASVS** e **OWASP Secure Headers**.
+Este repositório é a materialização da minha forma de pensar quando o assunto é qualidade e segurança de software.
 
-### Habilidades Demonstradas
+Em vez de construir um projeto fictício do zero, escolhi a [**ServeRest**](https://serverest.dev) — uma API pública que simula um e-commerce real — como meu "campo de batalha". O objetivo não é apenas executar testes, mas **estruturar uma estratégia de defesa** baseada nos padrões reais de mercado (OWASP).
 
-- Identificacao de vulnerabilidades em APIs REST
-- Estruturacao de testes de seguranca escalaaveis
-- Geracao de relatorios tecnicos e executivos
-- Integracao de seguranca em pipeline de CI/CD
-- Aplicacao de padroes OWASP em testes automatizados
+Aqui, eu não apenas valido se a API funciona; eu valido se ela **resiste** a ataques.
 
 ---
 
-## Matriz de Cobertura
+## Como eu estruturei a tomada de decisão
 
-| Categoria | ID | Vulnerabilidade Alvo | Status |
-|-----------|----|----------------------|:------:|
-| Injecao SQL | CT-SEC-01 | 8 payloads de SQLi em parametros de busca | OK |
-| XSS | CT-SEC-02 | 8 payloads de Cross-Site Scripting | OK |
-| Path Traversal | CT-SEC-03 | 5 payloads de Path Traversal | OK |
-| NoSQL Injection | CT-SEC-10 | 4 payloads de NoSQLi em login | OK |
-| Brute Force | SEC-AUTH-01 | 10 tentativas de login invalido | OK |
-| RBAC | SEC-AUTH-02 | Usuario comum tenta criar produto (403) | OK |
-| Token Invalido | SEC-AUTH-03 | 8 formatos de token malformado | OK |
-| Sem Token | SEC-AUTH-04 | Acesso a endpoint protegido sem autenticacao | OK |
-| User Enumeration | SEC-AUTH-05 | Timing attack e mensagens de erro | OK |
-| Horizontal Privilege | SEC-AUTH-06 | Usuario A acessa dados do Usuario B | OK |
-| Secure Headers | SEC-HEADERS-01 | 8+ headers de seguranca OWASP | OK |
-| CORS | SEC-HEADERS-02 | Analise de politica de origem cruzada | OK |
-| Cache Control | SEC-HEADERS-03 | Cache de dados sensiveis | OK |
-| Rate Limiting (publico) | SEC-RATE-01 | 100 requisicoes ao endpoint /produtos | OK |
-| Rate Limiting (login) | SEC-RATE-02 | 30 tentativas de login | OK |
-| Rate Limiting (cadastro) | SEC-RATE-03 | 20 criacoes de usuario | OK |
+Um bom teste não se faz apenas com código, mas com uma boa pergunta. Antes de escrever qualquer script, fiz as seguintes perguntas para definir a estratégia:
 
-**Total:** 16 cenarios de teste -> 93,75% de cobertura
+### 1. Injeção e Sanitização
+> *"Se um usuário mal-intencionado enviar comandos de banco de dados ou scripts maliciosos nos campos de busca ou cadastro, a API vai executá-los ou vai bloqueá-los?"*
+
+**Ação tomada:** Criei testes com payloads reais de SQL, NoSQL, XSS e Path Traversal. Em vez de apenas listar vetores genéricos, modelei cenários como **buscas por produtos contendo injeção** e **cadastros com scripts maliciosos no nome do usuário** para validar a sanitização real da aplicação.
+
+### 2. Autenticação e Controle de Acesso
+> *"O sistema realmente sabe quem é o usuário? Um usuário comum consegue forçar acesso a rotas de administrador ou a dados de outro usuário apenas mudando o ID na requisição?"*
+
+**Ação tomada:** Estruturei testes para validar a troca de tokens malformados, a ausência de autenticação, e cenários críticos de negócio como **um usuário comum tentar criar um produto** (que deve retornar 403), e **um usuário tentar acessar ou alterar dados de outro usuário apenas alterando parâmetros da URL** (escalonamento horizontal).
+
+### 3. Configuração do Servidor
+> *"O servidor está configurado para evitar ataques simples de engrenagem? As políticas de cache, CORS e limites de requisição estão bem ajustadas para evitar sobrecarga ou vazamento de dados?"*
+
+**Ação tomada:** Implementei testes para verificar os headers OWASP (como `X-Frame-Options` e `CSP`), validar que o CORS não permite origens genéricas (`*`) e forçar o Rate Limiting com **volumes de requisições próximos ao que um ataque de força bruta real faria** para validar a resiliência da infraestrutura.
 
 ---
 
-## Resultados e Evidencias
+## O que a execução dos meus testes revelou
 
-### Resumo Executivo
+Na última execução, a suíte rodou 16 cenários e evidenciou falhas críticas:
 
-**Data da Execucao:** 28 de Julho de 2026
-**Versao da API:** ServeRest 3.2.0
-**Status Geral:** ATENCAO PARCIAL - Testes funcionais passam, mas configuracoes de seguranca precisam de melhoria.
-
-| Metrica | Valor |
-|---------|-------|
-| Total de Testes | 16 cenarios |
-| Testes com Sucesso | 16 (100%) |
-| Tempo de Execucao | 9.9 segundos |
-| Vulnerabilidades Criticas | 0 |
-| Alertas de Seguranca | 4 |
+- **Falha de Sanitização:** 7 vulnerabilidades de XSS detectadas (a API reflete scripts maliciosos na resposta).
+- **Falta de Rate Limiting:** Nenhum dos endpoints principais bloqueia tentativas repetidas de requisição.
+- **Configurações permissivas:** CORS liberado para qualquer origem (`*`) e Cache sem `no-store` para dados sensíveis.
 
 ---
 
-### Status por Categoria de Teste
+## Sobre a implementação técnica
 
-| Categoria | Testes | Resultado | Classificacao |
-|-----------|:------:|:---------:|:-------------:|
-| Injecao (SQL, XSS, Path, NoSQL) | 4 | 100% | SEGURO |
-| Autenticacao e Autorizacao | 6 | 100% | SEGURO |
-| Headers HTTP | 3 | 100% | PARCIAL |
-| Rate Limiting | 3 | 100% | PARCIAL |
-
-**Legenda:** SEGURO = Vulnerabilidade nao encontrada | PARCIAL = Configuracao necessita ajuste | CRITICO = Vulnerabilidade confirmada
+Este projeto foi construído inteiramente com Playwright e TypeScript, com foco em boas práticas de engenharia de software:
+- Criação de dados sob demanda (com timestamp) para garantir isolamento e idempotência em pipelines paralelas.
+- Tratamento robusto de erros com retries para APIs públicas instáveis.
+- Geração de relatórios de evidência (Allure) que priorizam o diagnóstico, em vez de apenas status de Pass/Fail.
 
 ---
 
-### Alertas de Seguranca Identificados
+## Como reproduzir os testes e gerar as evidências localmente
 
-| ID | Alerta | Severidade | Endpoint(s) | Impacto | Status |
-|:--:|--------|:----------:|-------------|---------|:------:|
-| AS-01 | Rate Limiting ausente | **Alta** | /produtos, /login, /usuarios | Vulneravel a ataques de negacao de servico (DoS) e forca bruta | Pendente |
-| AS-02 | CORS permissivo (`*`) | Media | Global (todas as origens) | Risco de Cross-Origin Request Forgery e vazamento de dados | Pendente |
-| AS-03 | Referrer-Policy ausente | Media | Global (todos os endpoints) | Possivel vazamento de informacoes de referencia na URL | Pendente |
-| AS-04 | Cache-Control sem no-store | Media | Endpoints com dados sensiveis | Exposicao de dados em navegadores compartilhados ou proxies | Pendente |
+Para verificar o projeto na prática, clone o repositório e execute os comandos abaixo:
 
----
+```bash
+# Instalar dependências
+npm install
+npx playwright install chromium
 
-### Dashboard de Seguranca
+# Executar a suíte completa com cobertura
+npm run test:coverage
 
-<div align="center">
-  <img src="imagem/Dashboard de Seguranca.png" alt="Dashboard de Seguranca" width="100%" style="max-width: 800px; border-radius: 8px;">
-  <br>
-  <em>Dashboard de Seguranca - Resumo visual dos indicadores da ultima execucao</em>
-</div>
-
----
-
-### Log de Execucao dos Testes
-
-```
-Running 16 tests using 8 workers
-
-  [PASS] 1 - Bloquear acesso sem token (221ms)
-  [PASS] 2 - Multiplas tentativas de login (3.2s)
-  [PASS] 3 - Rejeitar login com e-mail inexistente (216ms)
-  [PASS] 4 - Usuario comum nao cria produtos (641ms)
-  [PASS] 5 - Rejeitar token invalido (2.7s)
-  [PASS] 6 - Usuario nao atualiza produto de outro (215ms)
-  [PASS] 7 - Politica CORS adequada (375ms)
-  [PASS] 8 - Headers de seguranca OWASP (362ms)
-  [PASS] 9 - Politica de cache adequada (357ms)
-  [PASS] 10 - Proteger contra SQL Injection (2.8s)
-  [PASS] 11 - Proteger contra XSS (2.9s)
-  [PASS] 12 - Proteger contra Path Traversal (2.1s)
-  [PASS] 13 - Proteger contra NoSQL Injection (1.9s)
-  [PASS] 14 - Rate limiting em endpoint publico (2.0s)
-  [PASS] 15 - Rate limiting no login (1.9s)
-  [PASS] 16 - Rate limiting na criacao de usuarios (521ms)
-
-  16 passed (9.9s)
+# Abrir o relatório de evidências (Playwright)
+npx playwright show-report reports/playwright-report
 ```
 
----
+Relatórios gerados localmente na sua máquina:
 
-### Relatorios Completos
-
-| Relatorio | Comando | Saida |
-|-----------|---------|-------|
-| Playwright HTML Report | `npx playwright show-report` | `playwright-report/index.html` |
-| Allure Report | `npm run report:allure` | `allure-report/index.html` |
-| OWASP ZAP Report | `npm run test:zap` | `reports/zap-report.html` |
-| Cobertura | `npm run coverage` | `coverage/` |
-
-**Relatorios Online (GitHub Pages):**
-- [Playwright Report](https://j0hnweider.github.io/security-testing/playwright-report/)
-- [Allure Report](https://j0hnweider.github.io/security-testing/allure-report/)
-- [OWASP ZAP Report](https://j0hnweider.github.io/security-testing/zap-report.html)
+- `playwright-report/index.html`: Relatório interativo do Playwright.
+- `allure-report/index.html`: Métricas e evidências do Allure.
+- `reports/zap-report.html`: Scan do OWASP ZAP via Docker.
 
 ---
 
-### Plano de Acao Recomendado
-
-| Prioridade | Acao | Endpoints Afetados | Prazo Estimado | Esforco |
-|:----------:|------|--------------------|:--------------:|:-------:|
-| **ALTA** | Implementar Rate Limiting | /produtos, /login, /usuarios | 2 dias | Medio |
-| MEDIA | Restringir CORS para dominios especificos | Global | 3 dias | Baixo |
-| MEDIA | Adicionar header Referrer-Policy | Global | 1 dia | Baixo |
-| MEDIA | Configurar Cache-Control com no-store | Dados sensiveis | 1 dia | Baixo |
-
-**Nota:** As correcoes de prioridade MEDIA envolvem ajustes de configuracao no servidor web ou framework, enquanto a prioridade ALTA requer implementacao de logica de negocios para limitacao de taxa de requisicoes.
-
----
-
-## Arquitetura
+## Estrutura de código
 
 ```
 security-testing/
 ├── src/
 │   ├── client/
-│   │   └── ApiClient.ts          # Cliente HTTP com autenticacao
+│   │   └── ApiClient.ts     # Gerencia requisições HTTP e tokens de forma centralizada
 │   ├── fixtures/
-│   │   └── auth.fixture.ts        # Fixtures: admin e usuario comum
-│   ├── tests/
-│   │   ├── injection.spec.ts      # SQLi, XSS, Path Traversal, NoSQLi
-│   │   ├── auth.spec.ts           # Brute force, RBAC, token, enum
-│   │   ├── headers.spec.ts        # OWASP Secure Headers, CORS
-│   │   └── rate-limiting.spec.ts  # Rate limiting por endpoint
-│   └── utils/
-│       └── allure-helper.ts       # Metricas e evidencias Allure
-├── zap/
-│   ├── zap-baseline-scan.sh       # Scan passivo OWASP ZAP
-│   └── zap-api-scan.sh            # Scan API OWASP ZAP (OpenAPI)
-├── imagem/
-│   └── banner.webp                # Banner do repositorio
-├── playwright.config.ts           # Configuracao Playwright
-├── tsconfig.json                  # TypeScript config
-├── .eslintrc.js                   # ESLint + Prettier
-├── .nycrc.json                    # Cobertura de codigo
-└── package.json                   # Dependencias e scripts
+│   │   └── auth.fixture.ts  # Fixtures reutilizáveis para usuário admin e comum
+│   └── tests/               # Suíte baseada em cenários reais de negócio
+│       ├── injection.spec.ts     # Valida sanitização (XSS, SQLi) com contextos reais de busca e cadastro
+│       ├── auth.spec.ts          # Valida RBAC, escalonamento horizontal e token inválido
+│       ├── headers.spec.ts       # Valida Headers OWASP e configuração de CORS
+│       └── rate-limiting.spec.ts # Valida limites reais de requisições por endpoint
+├── playwright.config.ts     # Configuração do Playwright (timeouts, workers, etc.)
+└── .nycrc.json              # Configuração de métricas de cobertura
 ```
 
 ---
 
-## Comandos
-
-| Comando | Descricao |
-|---------|-----------|
-| `npm run test:security` | Executa todos os testes de seguranca |
-| `npm run test:injection` | Apenas testes de injecao (SQL, XSS, Path, NoSQL) |
-| `npm run test:auth` | Apenas testes de autenticacao/autorizacao |
-| `npm run test:headers` | Apenas testes de cabecalhos HTTP |
-| `npm run test:rate-limit` | Apenas testes de rate limiting |
-| `npm run test:zap` | Scan OWASP ZAP baseline |
-| `npm run test:zap:api` | Scan OWASP ZAP API (OpenAPI) |
-| `npm run test:all` | Playwright + ZAP |
-| `npm run report:allure` | Gera relatorio Allure |
-| `npm run coverage` | Relatorio de cobertura |
-
----
-
-## Cenarios de Teste
-
-### Injecao (CT-SEC)
-
-| ID | Teste | Payloads |
-|----|-------|----------|
-| CT-SEC-01 | SQL Injection | `' OR '1'='1`, `' UNION SELECT * --`, `'; DROP TABLE --` |
-| CT-SEC-02 | XSS | `<script>alert('XSS')</script>`, `<img src=x onerror=...>` |
-| CT-SEC-03 | Path Traversal | `../../../etc/passwd`, `%2e%2e%2fetc%2fpasswd` |
-| CT-SEC-10 | NoSQL Injection | `{ "$ne": null }`, `{ "$regex": ".*" }` |
-
-### Autenticacao e Autorizacao (SEC-AUTH)
-
-| ID | Teste | Expectativa |
-|----|-------|-------------|
-| SEC-AUTH-01 | Brute Force (10 tentativas) | 429 ou 403 apos multiplas falhas |
-| SEC-AUTH-02 | RBAC - Usuario comum cria produto | 403 Forbidden |
-| SEC-AUTH-03 | Token invalido (8 formatos) | 401 Unauthorized |
-| SEC-AUTH-04 | Endpoint protegido sem token | 401 Unauthorized |
-| SEC-AUTH-05 | User Enumeration | Mesma mensagem para user existente/inexistente |
-| SEC-AUTH-06 | Horizontal Privilege Escalation | 403 ao acessar dados de outro usuario |
-
-### Headers HTTP (SEC-HEADERS)
-
-| ID | Header | Valor Esperado |
-|----|--------|----------------|
-| SEC-HEADERS-01 | X-Frame-Options | `DENY` ou `SAMEORIGIN` |
-| SEC-HEADERS-01 | X-Content-Type-Options | `nosniff` |
-| SEC-HEADERS-01 | Content-Security-Policy | Definido |
-| SEC-HEADERS-01 | Strict-Transport-Security | `max-age` definido |
-| SEC-HEADERS-01 | Referrer-Policy | `strict-origin` ou similar |
-| SEC-HEADERS-02 | Access-Control-Allow-Origin | Nao deve ser `*` |
-| SEC-HEADERS-03 | Cache-Control | `no-store` para dados sensiveis |
-
-### Rate Limiting (SEC-RATE)
-
-| ID | Endpoint | Requisicoes | Expectativa |
-|----|----------|-------------|-------------|
-| SEC-RATE-01 | GET /produtos | 100 em 10s | 429 detectado |
-| SEC-RATE-02 | POST /login | 30 tentativas | 429 detectado |
-| SEC-RATE-03 | POST /usuarios | 20 criacoes | 429 detectado |
-
----
-
-## OWASP ZAP
-
-O projeto inclui scripts prontos para execucao do **OWASP ZAP** via Docker:
+## Principais comandos
 
 ```bash
-# Scan passivo (baseline)
-npm run test:zap
-
-# Scan ativo via API (OpenAPI)
-npm run test:zap:api
-```
-
-Reports gerados em `reports/zap-report.html` e `reports/zap-report.xml`.
-
----
-
-## Relatorios
-
-| Tipo | Comando | Saida |
-|------|---------|-------|
-| Allure HTML | `npm run report:allure` | `allure-report/index.html` |
-| Playwright HTML | `npx playwright show-report` | `playwright-report/index.html` |
-| Cobertura | `npm run coverage` | `coverage/` |
-| OWASP ZAP | `npm run test:zap` | `reports/zap-report.html` |
-
----
-
-## Mapeamento OWASP
-
-| Classe de Teste | OWASP Top 10 (2021) | ASVS |
-|-----------------|---------------------|------|
-| SQL Injection | A03:2021 - Injection | V5.3 |
-| XSS | A03:2021 - Injection | V5.1 |
-| Path Traversal | A01:2021 - Broken Access Control | V4.1 |
-| NoSQL Injection | A03:2021 - Injection | V5.3 |
-| Brute Force | A07:2021 - Identification & Auth Failures | V2.2 |
-| RBAC | A01:2021 - Broken Access Control | V4.1 |
-| Token Invalido | A07:2021 - Identification & Auth Failures | V2.1 |
-| User Enumeration | A07:2021 - Identification & Auth Failures | V2.3 |
-| Secure Headers | A05:2021 - Security Misconfiguration | V14.4 |
-| CORS | A05:2021 - Security Misconfiguration | V14.4 |
-| Rate Limiting | A07:2021 - Identification & Auth Failures | V2.2 |
-
----
-
-## Integracao Continua (CI/CD)
-
-Pipeline automatizado via GitHub Actions:
-
-```yaml
-name: Security Tests
-on: [push, pull_request]
-jobs:
-  security-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-      - run: npm ci
-      - run: npx playwright install chromium
-      - run: npm run test:security
-      - uses: actions/upload-artifact@v3
-        with:
-          name: allure-report
-          path: allure-report/
+npm run test:security    # Executa todos os cenários
+npm run test:auth        # Valida RBAC, tokens e vazamentos de dados
+npm run test:injection   # Valida sanitização de inputs em cenários reais
+npm run test:headers     # Valida configuração de CORS e Headers OWASP
+npm run test:rate-limit  # Valida proteção contra força bruta e DoS
+npm run coverage         # Relatório de cobertura de código
+npm run test:zap         # Scan OWASP ZAP via Docker (análise passiva)
 ```
 
 ---
 
-## Configuracao
+## Minha visão sobre próximos passos
 
-```bash
-# Instalar dependencias
-npm install
-
-# Instalar Chromium (Playwright)
-npx playwright install chromium
-
-# Executar todos os testes
-npm run test:security
-
-# Gerar relatorio Allure
-npm run report:allure
-```
+Este projeto é vivo. A próxima fase é simular um ciclo de correção e regressão: aplicar patches na API, reexecutar a suíte, e gerar novas evidências que comprovem a eficácia das correções. Isso demonstra um fluxo completo de QA Engineering: **Detecção -> Report -> Correção -> Validação**.
 
 ---
 
-## Licenca
-
-MIT John Weider
-
----
-
-## Agradecimentos
-
-- [ServeRest](https://serverest.dev) - API publica para testes
-- [OWASP Foundation](https://owasp.org) - Padroes de seguranca
-- Comunidade Open Source pelas ferramentas incriveis
-
----
-
-<div align="center">
-
-"Testando seguranca para construir software mais confiavel."
-
-</div>
+MIT License - John Weider
