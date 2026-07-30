@@ -398,7 +398,7 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
   });
 
   test("SEC-AUTH-07: Deve ter tempo de resposta consistente para evitar enumeração", async () => {
-    AllureHelper.addSeverity("high");
+    AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "auth", "timing-attack");
     AllureHelper.addDescription(
       "Valida se a API não vaza informações sobre existência de usuários via tempo de resposta. " +
@@ -488,7 +488,7 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
   });
 
   test("SEC-AUTH-08: Deve validar domínios de e-mail para evitar phishing", async () => {
-    AllureHelper.addSeverity("medium");
+    AllureHelper.addSeverity("normal");
     AllureHelper.addTags("security", "auth", "social-engineering");
     AllureHelper.addDescription(
       "Valida se a API permite cadastro com e-mails de domínios temporários ou suspeitos. " +
