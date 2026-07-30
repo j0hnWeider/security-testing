@@ -522,7 +522,16 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       };
 
       const response = await adminClient.post('/usuarios', userData);
-      const body = await response.json();
+      
+      let body: any = {};
+      let mensagem = 'N/A';
+      
+      try {
+        body = await response.json();
+        mensagem = body.message || 'N/A';
+      } catch (error: unknown) {
+        mensagem = await response.text() || 'Erro ao parsear resposta';
+      }
 
       const permitido = response.status() === 201;
       
@@ -531,7 +540,7 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
         descricao: item.descricao,
         permitido: permitido,
         status: response.status(),
-        mensagem: body.message || 'N/A'
+        mensagem: mensagem
       });
 
       console.log(`[SOCIAL] ${item.dominio} -> ${permitido ? 'PERMITIDO' : 'BLOQUEADO'} (${response.status()})`);
