@@ -35,13 +35,14 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
   });
 
   test("SEC-AUTH-01: Deve bloquear múltiplas tentativas de login com credenciais inválidas", async () => {
+    const descricaoBase =
+      "Valida se a API implementa rate limiting em tentativas de login." +
+      " Envia 10 tentativas consecutivas com senha errada e verifica se alguma " +
+      "resposta retorna 429 (Too Many Requests) ou 403 bloqueado.";
+
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "auth", "brute-force");
-    AllureHelper.addDescription(
-      "Valida se a API implementa rate limiting em tentativas de login." +
-        " Envia 10 tentativas consecutivas com senha errada e verifica se alguma " +
-        "resposta retorna 429 (Too Many Requests) ou 403 bloqueado.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("SEC-AUTH-01");
     AllureHelper.addFeature("Segurança - Autenticação");
     AllureHelper.addStory("Força Bruta");
@@ -61,6 +62,7 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
 
     let blocked = false;
     let lastStatus = 0;
+    const alertas: string[] = [];
 
     for (let i = 0; i < invalidCredentials.length; i++) {
       const cred = invalidCredentials[i];
@@ -108,20 +110,28 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
     );
 
     if (!blocked) {
+      alertas.push(
+        "[ALERTA] API não bloqueia múltiplas tentativas de login (rate limiting não identificado)",
+      );
       console.warn(
         "⚠️ API não bloqueia múltiplas tentativas de login (rate limiting não identificado)",
       );
     }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
+    }
   });
 
   test("SEC-AUTH-02: Usuário comum não deve criar produtos (403 Forbidden)", async () => {
+    const descricaoBase =
+      "Valida o princípio do menor privilégio (PoLP). " +
+      "Um usuário COMUM não deve conseguir criar produtos, " +
+      "apenas administradores têm essa permissão.";
+
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "auth", "rbac");
-    AllureHelper.addDescription(
-      "Valida o princípio do menor privilégio (PoLP). " +
-        "Um usuário COMUM não deve conseguir criar produtos, " +
-        "apenas administradores têm essa permissão.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("SEC-AUTH-02");
     AllureHelper.addFeature("Segurança - Autorização");
     AllureHelper.addStory("RBAC - Controle de Acesso");
@@ -156,6 +166,7 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       };
     }
 
+    const alertas: string[] = [];
     const response: APIResponse = await commonUser.client.post("/produtos", {
       nome: "Produto Teste - Acesso Negado",
       preco: 100,
@@ -173,17 +184,28 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       "application/json",
     );
 
+    if (response.status() !== 403) {
+      alertas.push(
+        `[ALERTA] Usuário comum criou produto - status ${response.status()} em vez de 403`,
+      );
+    }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
+    }
+
     expect(response.status()).toBe(403);
     await commonUser.apiContext.dispose();
   });
 
   test("SEC-AUTH-03: Deve rejeitar token inválido ou mal formatado", async () => {
+    const descricaoBase =
+      "Valida que a API rejeita tokens inválidos, mal formatados ou expirados. " +
+      "Testa diferentes formatos de token inválido.";
+
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "auth", "token");
-    AllureHelper.addDescription(
-      "Valida que a API rejeita tokens inválidos, mal formatados ou expirados. " +
-        "Testa diferentes formatos de token inválido.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("SEC-AUTH-03");
     AllureHelper.addFeature("Segurança - Autenticação");
     AllureHelper.addStory("Token Inválido");
@@ -198,6 +220,8 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       "null",
       undefined,
     ];
+
+    const tokensAceitos: string[] = [];
 
     for (let i = 0; i < invalidTokens.length; i++) {
       const token = invalidTokens[i];
@@ -231,20 +255,34 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
             return;
           }
 
+          if (response.status() !== 401) {
+            tokensAceitos.push(
+              `"${String(token).substring(0, 30)}..." -> ${response.status()}`,
+            );
+          }
+
           expect(response.status()).toBe(401);
           await tempApiContext.dispose();
         },
       );
     }
+
+    if (tokensAceitos.length > 0) {
+      AllureHelper.addDescription(
+        descricaoBase +
+          ` | [ALERTA] ${tokensAceitos.length} tokens inválidos aceitos pela API`,
+      );
+    }
   });
 
   test("SEC-AUTH-04: Deve bloquear acesso a endpoint protegido sem token", async () => {
+    const descricaoBase =
+      "Valida que endpoints de criação exigem autenticação. " +
+      "Requisição sem token deve retornar 401.";
+
     AllureHelper.addSeverity("normal");
     AllureHelper.addTags("security", "auth", "unauthenticated");
-    AllureHelper.addDescription(
-      "Valida que endpoints de criação exigem autenticação. " +
-        "Requisição sem token deve retornar 401.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("SEC-AUTH-04");
     AllureHelper.addFeature("Segurança - Autenticação");
     AllureHelper.addStory("Acesso sem Autenticação");
@@ -257,6 +295,7 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       process.env.API_BASE_URL || "https://serverest.dev",
     );
 
+    const alertas: string[] = [];
     const response: APIResponse = await tempClient.post(
       "/produtos",
       {
@@ -276,17 +315,28 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       return;
     }
 
+    if (response.status() !== 401) {
+      alertas.push(
+        `[ALERTA] Acesso sem token retornou ${response.status()} em vez de 401`,
+      );
+    }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
+    }
+
     expect(response.status()).toBe(401);
     await tempApiContext.dispose();
   });
 
   test("SEC-AUTH-05: Deve rejeitar login com e-mail inexistente", async () => {
+    const descricaoBase =
+      "Valida que a API não vaza informação sobre existência de usuários. " +
+      "A mensagem de erro deve ser genérica.";
+
     AllureHelper.addSeverity("normal");
     AllureHelper.addTags("security", "auth", "enumeration");
-    AllureHelper.addDescription(
-      "Valida que a API não vaza informação sobre existência de usuários. " +
-        "A mensagem de erro deve ser genérica.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("SEC-AUTH-05");
     AllureHelper.addFeature("Segurança - Autenticação");
     AllureHelper.addStory("Prevenção de User Enumeration");
@@ -298,6 +348,8 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       tempApiContext,
       process.env.API_BASE_URL || "https://serverest.dev",
     );
+
+    const alertas: string[] = [];
 
     try {
       await tempClient.login("inexistente_123456@teste.com", "qualquersenha");
@@ -314,6 +366,24 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
         return;
       }
 
+      if (![400, 401].includes(status)) {
+        alertas.push(
+          `[ALERTA] Login inexistente retornou status inesperado: ${status}`,
+        );
+      }
+
+      if (err.message) {
+        if (
+          err.message.includes("não encontrado") ||
+          err.message.includes("not found") ||
+          err.message.includes("inexistente")
+        ) {
+          alertas.push(
+            "[ALERTA] Mensagem de erro revela inexistência do usuário (user enumeration)",
+          );
+        }
+      }
+
       expect([400, 401]).toContain(status);
       if (err.message) {
         expect(err.message).not.toContain("não encontrado");
@@ -323,15 +393,20 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
     } finally {
       await tempApiContext.dispose();
     }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
+    }
   });
 
   test("SEC-AUTH-06: Usuário comum não deve atualizar produto criado por admin", async () => {
+    const descricaoBase =
+      "Cria um produto com o Admin, obtém o ID, e tenta atualizá-lo " +
+      "usando um usuário COMUM. Deve retornar 403 Forbidden.";
+
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "auth", "rbac", "horizontal-privilege");
-    AllureHelper.addDescription(
-      "Cria um produto com o Admin, obtém o ID, e tenta atualizá-lo " +
-        "usando um usuário COMUM. Deve retornar 403 Forbidden.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("SEC-AUTH-06");
     AllureHelper.addFeature("Segurança - Autorização");
     AllureHelper.addStory("Escalação de Privilégio Horizontal");
@@ -398,6 +473,7 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
 
     await commonClient.login(commonEmail, commonPassword);
 
+    const alertas: string[] = [];
     const response: APIResponse = await commonClient.put(
       `/produtos/${productId}`,
       {
@@ -426,19 +502,30 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       return;
     }
 
+    if (response.status() !== 403) {
+      alertas.push(
+        `[ALERTA] Usuário comum editou produto do admin - status ${response.status()} em vez de 403`,
+      );
+    }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
+    }
+
     expect(response.status()).toBe(403);
 
     await commonApiContext.dispose();
   });
 
   test("SEC-AUTH-07: Deve ter tempo de resposta consistente para evitar enumeração", async () => {
+    const descricaoBase =
+      "Valida se a API não vaza informações sobre existência de usuários via tempo de resposta. " +
+      "Um atacante pode usar diferenças de tempo para enumerar usuários válidos. " +
+      "A resposta para usuário existente e inexistente deve ter tempos similares.";
+
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "auth", "timing-attack");
-    AllureHelper.addDescription(
-      "Valida se a API não vaza informações sobre existência de usuários via tempo de resposta. " +
-        "Um atacante pode usar diferenças de tempo para enumerar usuários válidos. " +
-        "A resposta para usuário existente e inexistente deve ter tempos similares.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("SEC-AUTH-07");
     AllureHelper.addFeature("Segurança - Autenticação");
     AllureHelper.addStory("Timing Attack");
@@ -461,6 +548,7 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
     ];
 
     const tempos: { email: string; tipo: string; tempo: number }[] = [];
+    const alertas: string[] = [];
 
     for (const item of emails) {
       const start = Date.now();
@@ -510,6 +598,9 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
     );
 
     if (diferenca > 200) {
+      alertas.push(
+        `[ALERTA] Possível timing attack - diferença de ${diferenca.toFixed(2)}ms entre existente e inexistente`,
+      );
       console.log(
         `[ALERTA] Possível timing attack detectado - diferença de ${diferenca.toFixed(2)}ms`,
       );
@@ -534,15 +625,20 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
     } else {
       console.log(`[INFO] Sem indícios significativos de timing attack.`);
     }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
+    }
   });
 
   test("SEC-AUTH-08: Deve validar domínios de e-mail para evitar phishing", async () => {
+    const descricaoBase =
+      "Valida se a API permite cadastro com e-mails de domínios temporários ou suspeitos. " +
+      "Um atacante pode usar e-mails descartáveis para criar contas falsas e realizar ataques de engenharia social.";
+
     AllureHelper.addSeverity("normal");
     AllureHelper.addTags("security", "auth", "social-engineering");
-    AllureHelper.addDescription(
-      "Valida se a API permite cadastro com e-mails de domínios temporários ou suspeitos. " +
-        "Um atacante pode usar e-mails descartáveis para criar contas falsas e realizar ataques de engenharia social.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("SEC-AUTH-08");
     AllureHelper.addFeature("Segurança - Engenharia Social");
     AllureHelper.addStory("Cadastro com Domínios Suspeitos");
@@ -558,7 +654,15 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       { dominio: "example.com", descricao: "Domínio de exemplo" },
     ];
 
-    const resultados: any[] = [];
+    const resultados: Array<{
+      dominio: string;
+      descricao: string;
+      permitido: boolean;
+      status: number;
+      mensagem: string;
+    }> = [];
+
+    const alertas: string[] = [];
 
     for (const item of dominiosSuspeitos) {
       const email = `usuario_${Date.now()}_${Math.random().toString(36).substring(7)}@${item.dominio}`;
@@ -572,12 +676,12 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
 
       const response = await adminClient.post("/usuarios", userData);
 
-      let body: any = {};
+      let body: Record<string, unknown> = {};
       let mensagem = "N/A";
 
       try {
         body = await response.json();
-        mensagem = body.message || "N/A";
+        mensagem = (body.message as string) || "N/A";
       } catch (error: unknown) {
         mensagem = (await response.text()) || "Erro ao parsear resposta";
       }
@@ -610,12 +714,14 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
     const permitidos = resultados.filter((r) => r.permitido);
 
     if (permitidos.length > 0) {
+      const dominios = permitidos.map((r) => r.dominio).join(", ");
+      alertas.push(
+        `[ALERTA] ${permitidos.length} domínios suspeitos permitidos: ${dominios}`,
+      );
       console.log(
         `[ALERTA] ${permitidos.length} domínios suspeitos foram permitidos`,
       );
-      console.log(
-        `[ALERTA] Domínios permitidos: ${permitidos.map((r) => r.dominio).join(", ")}`,
-      );
+      console.log(`[ALERTA] Domínios permitidos: ${dominios}`);
 
       await AllureHelper.addAttachment(
         "Alerta: Domínios Suspeitos Permitidos",
@@ -634,6 +740,10 @@ test.describe("SEC-AUTH - Testes de Autenticação e Autorização", () => {
       );
     } else {
       console.log(`[INFO] Nenhum domínio suspeito foi permitido.`);
+    }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
     }
   });
 });

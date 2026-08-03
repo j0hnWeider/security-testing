@@ -24,12 +24,13 @@ test.describe("SEC-HEADERS - Testes de Headers HTTP", () => {
   test("SEC-HEADERS-01: Deve retornar headers de segurança OWASP", async ({
     request,
   }) => {
+    const descricaoBase =
+      "Valida a presença dos principais headers de segurança " +
+      "recomendados pelo OWASP.";
+
     AllureHelper.addSeverity("normal");
     AllureHelper.addTags("security", "headers", "owasp");
-    AllureHelper.addDescription(
-      "Valida a presença dos principais headers de segurança " +
-        "recomendados pelo OWASP.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("SEC-HEADERS-01");
 
     const response = await request.get(baseUrl);
@@ -43,6 +44,7 @@ test.describe("SEC-HEADERS - Testes de Headers HTTP", () => {
     };
 
     const missingHeaders: string[] = [];
+    const alertas: string[] = [];
 
     for (const [header, expectedValues] of Object.entries(expectedHeaders)) {
       const headerValue = headers[header.toLowerCase()];
@@ -69,7 +71,12 @@ test.describe("SEC-HEADERS - Testes de Headers HTTP", () => {
     );
 
     if (missingHeaders.length > 0) {
+      alertas.push(`[ALERTA] Headers ausentes: ${missingHeaders.join(", ")}`);
       console.warn(`⚠️ Headers ausentes: ${missingHeaders.join(", ")}`);
+    }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
     }
 
     // Não falha o teste se headers estiverem ausentes (apenas reporta)
@@ -82,17 +89,19 @@ test.describe("SEC-HEADERS - Testes de Headers HTTP", () => {
   test("SEC-HEADERS-02: Deve ter política CORS adequada", async ({
     request,
   }) => {
+    const descricaoBase =
+      "Valida que a política CORS não permite origens arbitrárias.";
+
     AllureHelper.addSeverity("normal");
     AllureHelper.addTags("security", "headers", "cors");
-    AllureHelper.addDescription(
-      "Valida que a política CORS não permite origens arbitrárias.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("SEC-HEADERS-02");
 
     const response = await request.get(baseUrl);
     const headers = response.headers();
 
     const allowOrigin = headers["access-control-allow-origin"];
+    const alertas: string[] = [];
 
     AllureHelper.addAttachment(
       "CORS Configuration",
@@ -101,9 +110,16 @@ test.describe("SEC-HEADERS - Testes de Headers HTTP", () => {
     );
 
     if (allowOrigin === "*") {
+      alertas.push(
+        "[ALERTA] CORS permitindo qualquer origem (*) - potencial risco de segurança",
+      );
       console.warn(
         "⚠️ CORS permitindo qualquer origem (*) - potencial risco de segurança",
       );
+    }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
     }
   });
 
@@ -113,11 +129,11 @@ test.describe("SEC-HEADERS - Testes de Headers HTTP", () => {
   test("SEC-HEADERS-03: Deve ter política de cache adequada", async ({
     request,
   }) => {
+    const descricaoBase = "Valida que dados sensíveis não são cacheados.";
+
     AllureHelper.addSeverity("normal");
     AllureHelper.addTags("security", "headers", "cache");
-    AllureHelper.addDescription(
-      "Valida que dados sensíveis não são cacheados.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("SEC-HEADERS-03");
 
     const response = await request.get(baseUrl);
@@ -125,6 +141,7 @@ test.describe("SEC-HEADERS - Testes de Headers HTTP", () => {
 
     const cacheControl = headers["cache-control"];
     const pragma = headers["pragma"];
+    const alertas: string[] = [];
 
     AllureHelper.addAttachment(
       "Cache Headers",
@@ -139,7 +156,12 @@ test.describe("SEC-HEADERS - Testes de Headers HTTP", () => {
     if (cacheControl && cacheControl.includes("no-store")) {
       console.log("✅ Cache-Control configurado corretamente");
     } else {
+      alertas.push("[ALERTA] Cache-Control não possui 'no-store'");
       console.warn("⚠️ Cache-Control não possui no-store");
+    }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
     }
   });
 });

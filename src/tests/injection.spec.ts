@@ -28,13 +28,14 @@ test.describe("Testes de Injeção - CT-SEC", () => {
   });
 
   test("CT-SEC-01: SQL Injection em busca de produtos", async () => {
+    const descricaoBase =
+      "Valida se a API esta protegida contra SQL Injection nos parametros de busca. " +
+      "Testa diferentes payloads que tentam modificar a query original para " +
+      "retornar dados indevidos ou quebrar a consulta.";
+
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "injection", "sql");
-    AllureHelper.addDescription(
-      "Valida se a API esta protegida contra SQL Injection nos parametros de busca. " +
-        "Testa diferentes payloads que tentam modificar a query original para " +
-        "retornar dados indevidos ou quebrar a consulta.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("CT-SEC-01");
     AllureHelper.addFeature("Segurança - Injeção");
     AllureHelper.addStory("SQL Injection");
@@ -43,6 +44,8 @@ test.describe("Testes de Injeção - CT-SEC", () => {
     expect(legitResponse.status()).toBe(200);
     const legitData = await legitResponse.json();
     const legitCount = Array.isArray(legitData) ? legitData.length : 0;
+
+    const alertas: string[] = [];
 
     await AllureHelper.addAttachment(
       "Busca legítima",
@@ -95,6 +98,9 @@ test.describe("Testes de Injeção - CT-SEC", () => {
 
           if (body.length > legitCount) {
             encontrouIndicio = true;
+            alertas.push(
+              `[ALERTA] SQL Injection detectada: ${sql.descricao} retornou ${body.length} resultados (esperado: ${legitCount})`,
+            );
             console.log(
               `[ALERTA] SQL Injection detectada com payload: ${sql.payload}`,
             );
@@ -125,6 +131,9 @@ test.describe("Testes de Injeção - CT-SEC", () => {
               (firstItem.senha || firstItem.password || firstItem.email)
             ) {
               encontrouIndicio = true;
+              alertas.push(
+                `[ALERTA] UNION Injection detectada - dados sensíveis extraídos via: ${sql.descricao}`,
+              );
               console.log(
                 `[ALERTA] UNION SQL Injection detectada - dados sensiveis extraidos`,
               );
@@ -151,17 +160,22 @@ test.describe("Testes de Injeção - CT-SEC", () => {
     if (!encontrouIndicio) {
       console.log("Nenhum indicio de SQL Injection foi encontrado.");
     }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
+    }
   });
 
   test("CT-SEC-02: XSS em cadastro de usuario", async () => {
+    const descricaoBase =
+      "Valida se a API sanitiza entradas que contem codigo JavaScript. " +
+      "Cadastra um usuario com payload XSS e verifica se o valor armazenado " +
+      "foi sanitizado ou removido. Vulnerabilidades encontradas sao registradas " +
+      "como alertas, mas nao quebram o pipeline.";
+
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "injection", "xss");
-    AllureHelper.addDescription(
-      "Valida se a API sanitiza entradas que contem codigo JavaScript. " +
-        "Cadastra um usuario com payload XSS e verifica se o valor armazenado " +
-        "foi sanitizado ou removido. Vulnerabilidades encontradas sao registradas " +
-        "como alertas, mas nao quebram o pipeline.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("CT-SEC-02");
     AllureHelper.addFeature("Segurança - Injeção");
     AllureHelper.addStory("Cross-Site Scripting (XSS)");
@@ -178,7 +192,13 @@ test.describe("Testes de Injeção - CT-SEC", () => {
     ];
 
     let encontrouVulnerabilidade = false;
-    const vulnerabilidadesEncontradas: any[] = [];
+    const vulnerabilidadesEncontradas: Array<{
+      payload: string;
+      armazenado: string;
+      contemTag: boolean;
+      contemEventHandler: boolean;
+    }> = [];
+    const alertas: string[] = [];
 
     for (const payload of xssPayloads) {
       await AllureHelper.addStep(
@@ -249,6 +269,9 @@ test.describe("Testes de Injeção - CT-SEC", () => {
     }
 
     if (encontrouVulnerabilidade) {
+      alertas.push(
+        `[ALERTA] ${vulnerabilidadesEncontradas.length} vulnerabilidades de XSS armazenadas encontradas`,
+      );
       console.log(
         `[RESUMO] Foram encontradas ${vulnerabilidadesEncontradas.length} vulnerabilidades de XSS.`,
       );
@@ -269,15 +292,20 @@ test.describe("Testes de Injeção - CT-SEC", () => {
     } else {
       console.log("Nenhum indicio de XSS foi encontrado.");
     }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
+    }
   });
 
   test("CT-SEC-03: Path Traversal", async () => {
+    const descricaoBase =
+      "Valida se a API esta protegida contra ataques de Path Traversal. " +
+      "Tenta acessar arquivos sensiveis do servidor atraves de parametros.";
+
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "injection", "path-traversal");
-    AllureHelper.addDescription(
-      "Valida se a API esta protegida contra ataques de Path Traversal. " +
-        "Tenta acessar arquivos sensiveis do servidor atraves de parametros.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("CT-SEC-03");
     AllureHelper.addFeature("Segurança - Injeção");
     AllureHelper.addStory("Path Traversal");
@@ -302,6 +330,7 @@ test.describe("Testes de Injeção - CT-SEC", () => {
     ];
 
     let encontrouIndicio = false;
+    const alertas: string[] = [];
 
     for (const path of pathPayloads) {
       await AllureHelper.addStep(
@@ -324,6 +353,9 @@ test.describe("Testes de Injeção - CT-SEC", () => {
             for (const sensitive of path.sensitive) {
               if (body.includes(sensitive)) {
                 encontrouIndicio = true;
+                alertas.push(
+                  `[ALERTA] Path Traversal em ${endpoint} - conteúdo sensível: ${sensitive}`,
+                );
                 console.log(`[ALERTA] Path Traversal detectado em ${endpoint}`);
                 console.log(`Payload: ${path.payload}`);
                 console.log(`Conteudo sensivel encontrado: ${sensitive}`);
@@ -352,15 +384,20 @@ test.describe("Testes de Injeção - CT-SEC", () => {
     if (!encontrouIndicio) {
       console.log("Nenhum indicio de Path Traversal foi encontrado.");
     }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
+    }
   });
 
   test("CT-SEC-10: NoSQL Injection no login", async () => {
+    const descricaoBase =
+      "Valida se a API esta protegida contra NoSQL Injection no endpoint de login. " +
+      "Tenta usar operadores do MongoDB para contornar a autenticacao.";
+
     AllureHelper.addSeverity("critical");
     AllureHelper.addTags("security", "injection", "nosql");
-    AllureHelper.addDescription(
-      "Valida se a API esta protegida contra NoSQL Injection no endpoint de login. " +
-        "Tenta usar operadores do MongoDB para contornar a autenticacao.",
-    );
+    AllureHelper.addDescription(descricaoBase);
     AllureHelper.addTestCaseId("CT-SEC-10");
     AllureHelper.addFeature("Segurança - Injeção");
     AllureHelper.addStory("NoSQL Injection");
@@ -417,6 +454,7 @@ test.describe("Testes de Injeção - CT-SEC", () => {
     ];
 
     let encontrouVulnerabilidade = false;
+    const alertas: string[] = [];
 
     for (const noSql of noSqlPayloads) {
       await AllureHelper.addStep(
@@ -429,6 +467,9 @@ test.describe("Testes de Injeção - CT-SEC", () => {
 
             if (body.authorization) {
               encontrouVulnerabilidade = true;
+              alertas.push(
+                `[ALERTA CRITICO] NoSQL Injection bem-sucedida: ${noSql.descricao}`,
+              );
               console.log(`[ALERTA CRITICO] NoSQL Injection bem-sucedida`);
               console.log(`Payload: ${JSON.stringify(noSql.payload)}`);
 
@@ -457,6 +498,10 @@ test.describe("Testes de Injeção - CT-SEC", () => {
 
     if (!encontrouVulnerabilidade) {
       console.log("Nenhum indicio de NoSQL Injection foi encontrado.");
+    }
+
+    if (alertas.length > 0) {
+      AllureHelper.addDescription(descricaoBase + " | " + alertas.join(" | "));
     }
   });
 });
