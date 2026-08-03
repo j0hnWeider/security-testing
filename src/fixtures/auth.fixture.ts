@@ -21,7 +21,7 @@ export async function createAuthenticatedClient(): Promise<AuthFixture> {
   const client = new ApiClient(apiContext, baseURL);
 
   const timestamp = Date.now();
-  const email = `admin_${timestamp}@qa.com`;
+  const email = `admin_${timestamp}_${Math.random().toString(36).substring(7)}@qa.com`;
   const password = "Teste@123";
 
   const maxRetries = 3;
@@ -85,7 +85,7 @@ export async function createCommonUser(): Promise<CommonUserFixture> {
   const client = new ApiClient(apiContext, baseURL);
 
   const timestamp = Date.now();
-  const email = `common_${timestamp}@qa.com`;
+  const email = `common_${timestamp}_${Math.random().toString(36).substring(7)}@qa.com`;
   const password = "Teste@123";
 
   const maxRetries = 3;
