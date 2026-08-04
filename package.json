@@ -16,6 +16,7 @@
     "test:zap": "bash zap/zap-baseline-scan.sh",
     "test:zap:api": "bash zap/zap-api-scan.sh",
     "test:mass": "npx playwright test --grep \"SEC-MASS\"",
+    "test:race": "npx playwright test --grep \"SEC-RACE\"",
     "postinstall": "echo 'Instalacao concluida. Execute: npx playwright install chromium'",
     "lint": "eslint src/**/*.ts",
     "report:allure": "allure generate allure-results --clean -o allure-report && allure open allure-report",
