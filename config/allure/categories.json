@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Falhas de Segurança - Vulnerabilidades Confirmadas",
+    "messageRegex": ".*\\[ALERTA CRITICO\\].*",
+    "matchedStatuses": ["failed", "broken"],
+    "flaky": false
+  },
+  {
+    "name": "Alertas de Segurança - Requerem Investigação",
+    "messageRegex": ".*\\[ALERTA\\].*",
+    "matchedStatuses": ["passed", "failed"],
+    "flaky": false
+  },
+  {
+    "name": "Testes Ignorados por Indisponibilidade",
+    "messageRegex": ".*Servidor indisponível.*|.*Abortando teste.*",
+    "matchedStatuses": ["skipped"],
+    "flaky": false
+  },
+  {
+    "name": "Erros de Infraestrutura",
+    "messageRegex": ".*ECONNREFUSED.*|.*ETIMEDOUT.*|.*503.*|.*Service Unavailable.*",
+    "matchedStatuses": ["broken"],
+    "flaky": true
+  }
+]

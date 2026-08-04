@@ -161,6 +161,32 @@ jobs:
           merge-multiple: true
           path: allure-results/
 
+      # Restaura histórico de execuções anteriores para gerar o gráfico de tendência (Trend)
+      - name: Restore Allure History
+        run: |
+          curl -s -L https://j0hnweider.github.io/security-testing/history/history.json -o allure-results/history.json 2>/dev/null || echo "Nenhum histórico anterior encontrado."
+          curl -s -L https://j0hnweider.github.io/security-testing/history/history-trend.json -o allure-results/history-trend.json 2>/dev/null || echo "Nenhum trend anterior encontrado."
+        continue-on-error: true
+
+      # Cria informações do executor (aba Executors)
+      - name: Create Executor Info
+        run: |
+          echo '{
+            "name": "GitHub Actions",
+            "type": "github",
+            "url": "https://github.com/j0hnWeider/security-testing/actions/runs/${{ github.run_id }}",
+            "buildOrder": ${{ github.run_number }},
+            "buildName": "Security Tests #${{ github.run_number }}",
+            "buildUrl": "https://github.com/j0hnWeider/security-testing/actions/runs/${{ github.run_id }}",
+            "reportUrl": "https://j0hnweider.github.io/security-testing",
+            "reportName": "Allure Report - Security Tests"
+          }' > allure-results/executor.json
+
+      # Copia o arquivo de categorias personalizadas
+      - name: Copy Categories
+        run: cp config/allure/categories.json allure-results/categories.json
+        continue-on-error: true
+
       - name: Generate Allure Report
         run: |
           npx allure generate allure-results --clean -o allure-report
