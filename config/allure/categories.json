@@ -1,19 +1,19 @@
 [
   {
-    "name": "Falhas de Segurança - Vulnerabilidades Confirmadas",
+    "name": "Falhas de Seguranca - Vulnerabilidades Confirmadas",
     "messageRegex": ".*\\[ALERTA CRITICO\\].*",
     "matchedStatuses": ["failed", "broken"],
     "flaky": false
   },
   {
-    "name": "Alertas de Segurança - Requerem Investigação",
+    "name": "Alertas de Seguranca - Requerem Investigacao",
     "messageRegex": ".*\\[ALERTA\\].*",
     "matchedStatuses": ["passed", "failed"],
     "flaky": false
   },
   {
     "name": "Testes Ignorados por Indisponibilidade",
-    "messageRegex": ".*Servidor indisponível.*|.*Abortando teste.*",
+    "messageRegex": ".*Servidor indisponivel.*|.*Abortando teste.*",
     "matchedStatuses": ["skipped"],
     "flaky": false
   },

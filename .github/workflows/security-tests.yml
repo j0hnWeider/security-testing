@@ -161,14 +161,22 @@ jobs:
           merge-multiple: true
           path: allure-results/
 
-      # Restaura histórico de execuções anteriores para gerar o gráfico de tendência (Trend)
       - name: Restore Allure History
         run: |
-          curl -s -L https://j0hnweider.github.io/security-testing/history/history.json -o allure-results/history.json 2>/dev/null || echo "Nenhum histórico anterior encontrado."
-          curl -s -L https://j0hnweider.github.io/security-testing/history/history-trend.json -o allure-results/history-trend.json 2>/dev/null || echo "Nenhum trend anterior encontrado."
+          echo "Restaurando historico do Allure..."
+          curl -s -L https://j0hnweider.github.io/security-testing/history/history.json -o allure-results/history.json 2>/dev/null || echo "Nenhum history.json remoto encontrado."
+          curl -s -L https://j0hnweider.github.io/security-testing/history/history-trend.json -o allure-results/history-trend.json 2>/dev/null || echo "Nenhum history-trend.json remoto encontrado."
+
+          if [ ! -f allure-results/history.json ]; then
+            echo '{"statistic":{"failed":0,"broken":0,"skipped":0,"passed":0,"unknown":0,"total":0},"items":[]}' > allure-results/history.json
+            echo "history.json inicial criado."
+          fi
+          if [ ! -f allure-results/history-trend.json ]; then
+            echo '[]' > allure-results/history-trend.json
+            echo "history-trend.json inicial criado."
+          fi
         continue-on-error: true
 
-      # Cria informações do executor (aba Executors)
       - name: Create Executor Info
         run: |
           echo '{
@@ -182,9 +190,40 @@ jobs:
             "reportName": "Allure Report - Security Tests"
           }' > allure-results/executor.json
 
-      # Copia o arquivo de categorias personalizadas
       - name: Copy Categories
-        run: cp config/allure/categories.json allure-results/categories.json
+        run: |
+          if [ -f config/allure/categories.json ]; then
+            cp config/allure/categories.json allure-results/categories.json
+            echo "categories.json copiado do repositorio."
+          else
+            echo '[
+              {
+                "name": "Falhas de Seguranca - Vulnerabilidades Confirmadas",
+                "messageRegex": ".*\\[ALERTA CRITICO\\].*",
+                "matchedStatuses": ["failed", "broken"],
+                "flaky": false
+              },
+              {
+                "name": "Alertas de Seguranca - Requerem Investigacao",
+                "messageRegex": ".*\\[ALERTA\\].*",
+                "matchedStatuses": ["passed", "failed"],
+                "flaky": false
+              },
+              {
+                "name": "Testes Ignorados por Indisponibilidade",
+                "messageRegex": ".*Servidor indisponivel.*|.*Abortando teste.*",
+                "matchedStatuses": ["skipped"],
+                "flaky": false
+              },
+              {
+                "name": "Erros de Infraestrutura",
+                "messageRegex": ".*ECONNREFUSED.*|.*ETIMEDOUT.*|.*503.*|.*Service Unavailable.*",
+                "matchedStatuses": ["broken"],
+                "flaky": true
+              }
+            ]' > allure-results/categories.json
+            echo "categories.json padrao criado (arquivo de configuracao nao encontrado)."
+          fi
         continue-on-error: true
 
       - name: Generate Allure Report
