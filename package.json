@@ -6,6 +6,7 @@
     "test:security": "npx playwright test",
     "test:all": "npm run test:security && npm run test:zap",
     "test:auth": "npx playwright test --grep \"SEC-AUTH\"",
+    "test:boundary": "npx playwright test --grep \"SEC-BOUNDARY\"",
     "test:coverage": "nyc --reporter=html --reporter=text npx playwright test",
     "test:crypto": "npx playwright test --grep \"SEC-CRYPTO\"",
     "test:headers": "npx playwright test --grep \"SEC-HEADERS\"",
