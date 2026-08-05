@@ -118,7 +118,7 @@ security-testing/
 │ └── utils/ # AllureHelper e utilitários
 ├── playwright.config.ts
 ├── package.json
-├── SECURITY_SCORECARD.md # Dashboard de maturidade de segurança
+├── resultados.md # Dashboard de maturidade de segurança
 └── README.md
 
 text
@@ -157,4 +157,6 @@ npm run test:race        # Concorrência em compras
 npm run test:rate-limit  # Proteção contra força bruta e DoS
 npm run test:ui          # Testes de segurança no frontend
 npm run perf:all         # Todos os cenários de performance
+
+```
 MIT License - John Weider
