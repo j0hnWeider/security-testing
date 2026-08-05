@@ -1,3 +1,17 @@
+/**
+ * Testes de Boundary e Edge Cases
+ *
+ * A ideia aqui nao eh testar "campo vazio" ou "senha com 1 caractere".
+ * Isso qlqr um faz. O foco sao cenarios reais que derrubam API em producao:
+ * payload gigante, json malformado, objeto aninhado ate o talo, content-type
+ * errado, tipo de dado inesperado. Coisa que dev nenhum pensa na hora de codar,
+ * mas que aparece em penetracao testing de verdade.
+ *
+ * OWASP ASVS V5.1.2 (Input Validation)
+ * OWASP ASVS V5.1.4 (Size Limits)
+ * OWASP ASVS V5.1.5 (Type Checking)
+ */
+
 import { test, request, APIResponse } from "@playwright/test";
 import { createAuthenticatedClient } from "../../fixtures/auth.fixture";
 import { ApiClient } from "../../client/ApiClient";
@@ -11,6 +25,9 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
     adminClient = auth.client;
   });
 
+  // ------------------------------------------------------------------
+  // SEC-BOUNDARY-01: Payload JSON gigante (1MB+)
+  // ------------------------------------------------------------------
   test("SEC-BOUNDARY-01: API deve rejeitar payload excessivamente grande", async () => {
     const descBase =
       "Envia um JSON com mais de 1MB no campo descricao. Isso aqui eh classico: " +
@@ -25,7 +42,10 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
     AllureHelper.addStory("Payload Gigante");
 
     const alertas: string[] = [];
-    const descricaoGrande = "A".repeat(1024 * 1024);
+
+    // Gera uma string de ~1MB. Nao eh exatamente 1MB, mas eh suficiente pra testar.
+    // O ideal seria usar Buffer.alloc, mas assim fica mais legivel.
+    const descricaoGrande = "A".repeat(1024 * 1024); // ~1MB
 
     const startTime = Date.now();
     const response: APIResponse = await adminClient.post("/produtos", {
@@ -65,12 +85,15 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
         "[ALERTA CRITICO] API aceitou payload de 1MB sem reclamar. Possivel DoS.",
       );
       console.log("[BOUNDARY] VULNERABILIDADE: payload gigante aceito");
+    } else if (response.status() === 413) {
+      console.log("[BOUNDARY] API rejeitou payload grande com 413 - ok.");
     } else if (elapsed > 30000) {
       alertas.push(
         "[ALERTA] API demorou mais de 30s pra responder com payload grande",
       );
     }
 
+    // Limpeza
     if (productId) {
       await adminClient.delete(`/produtos/${productId}`).catch(() => {});
     }
@@ -80,6 +103,9 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
     }
   });
 
+  // ------------------------------------------------------------------
+  // SEC-BOUNDARY-02: JSON malformado
+  // ------------------------------------------------------------------
   test("SEC-BOUNDARY-02: API deve rejeitar JSON malformado", async () => {
     const descBase =
       "Envia um body que NAO eh JSON valido: faltando aspas, virgula no lugar " +
@@ -94,6 +120,7 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
     AllureHelper.addStory("JSON Malformado");
 
     const alertas: string[] = [];
+
     const malformedPayloads = [
       { body: '{ nome: "teste" }', desc: "faltando aspas na chave" },
       { body: '{ "nome": "teste", }', desc: "virgula extra no final" },
@@ -104,11 +131,13 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
     ];
 
     for (const malformed of malformedPayloads) {
+      // Aqui a gente nao pode usar o ApiClient.post pq ele seta Content-Type como JSON.
+      // Vamos fazer na mao mesmo, com fetch direto.
       const tempContext = await request.newContext({
         baseURL: process.env.API_BASE_URL || "https://serverest.dev",
       });
 
-      let response: APIResponse | undefined;
+      let response;
       try {
         response = await tempContext.post("/produtos", {
           headers: {
@@ -118,6 +147,7 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
           data: malformed.body as string,
         });
       } catch (error) {
+        // Se nem conseguiu enviar, o cliente barrou antes. Isso eh ok tbm.
         console.log(
           `[BOUNDARY] Payload '${malformed.desc}' nem foi enviado: ${error}`,
         );
@@ -134,6 +164,7 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
 
       if (status === 201 || status === 200) {
         alertas.push(`[ALERTA] API aceitou JSON malformado: ${malformed.desc}`);
+        // Limpa se criou algo
         try {
           const json = JSON.parse(body);
           if (json._id)
@@ -145,6 +176,7 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
         alertas.push(
           `[ALERTA] API retornou 500 com JSON malformado: ${malformed.desc}. Possivel stack trace.`,
         );
+        // Verifica se tem stack trace na resposta
         if (
           body.includes("at ") ||
           body.includes("Error:") ||
@@ -174,6 +206,9 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
     }
   });
 
+  // ------------------------------------------------------------------
+  // SEC-BOUNDARY-03: Objeto aninhado profundo (possivel stack overflow)
+  // ------------------------------------------------------------------
   test("SEC-BOUNDARY-03: API deve rejeitar objeto excessivamente aninhado", async () => {
     const descBase =
       "Cria um JSON com 100+ niveis de aninhamento. Isso aqui estoura parser JSON " +
@@ -189,6 +224,7 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
 
     const alertas: string[] = [];
 
+    // Cria um objeto aninhado de 100 niveis. Gambiarra? Sim. Mas funciona.
     let nested: Record<string, unknown> = { valor: "fim" };
     for (let i = 0; i < 100; i++) {
       nested = { filho: nested };
@@ -200,7 +236,7 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
       preco: 100,
       descricao: "Teste de profundidade",
       quantidade: 10,
-      metadata: nested,
+      metadata: nested, // aqui vai o objeto de 100 niveis
     });
     const elapsed = Date.now() - startTime;
 
@@ -252,6 +288,9 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
     }
   });
 
+  // ------------------------------------------------------------------
+  // SEC-BOUNDARY-04: Content-Type incorreto (text/plain em vez de application/json)
+  // ------------------------------------------------------------------
   test("SEC-BOUNDARY-04: API deve rejeitar Content-Type incorreto", async () => {
     const descBase =
       "Envia um JSON valido mas com Content-Type: text/plain. Muita API soh " +
@@ -267,6 +306,7 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
 
     const alertas: string[] = [];
 
+    // Faz na mao pq o ApiClient sempre seta Content-Type: application/json
     const tempContext = await request.newContext({
       baseURL: process.env.API_BASE_URL || "https://serverest.dev",
     });
@@ -323,6 +363,9 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
     }
   });
 
+  // ------------------------------------------------------------------
+  // SEC-BOUNDARY-05: Tipos de dados inesperados (array em vez de string, etc)
+  // ------------------------------------------------------------------
   test("SEC-BOUNDARY-05: API deve rejeitar tipos de dados inesperados nos campos", async () => {
     const descBase =
       "Testa tipos de dados completamente errados: array onde era string, " +
@@ -411,6 +454,9 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
     }
   });
 
+  // ------------------------------------------------------------------
+  // SEC-BOUNDARY-06: Caracteres Unicode e emojis
+  // ------------------------------------------------------------------
   test("SEC-BOUNDARY-06: API deve tratar caracteres Unicode e emojis corretamente", async () => {
     const descBase =
       "Testa caracteres Unicode extremos, emojis, e combinacoes que podem quebrar " +
@@ -449,6 +495,7 @@ test.describe.serial("SEC-BOUNDARY - Boundary e Edge Cases", () => {
         const body = await response.json();
         userId = body._id || null;
 
+        // Verifica se o nome foi armazenado corretamente
         if (userId) {
           const getResp = await adminClient.get(`/usuarios/${userId}`);
           if (getResp.status() === 200) {
