@@ -104,6 +104,8 @@ O relatório completo do Allure é publicado automaticamente no GitHub Pages ap�
 ---
 
 ## Estrutura de código
+
+```text
 security-testing/
 ├── .github/workflows/ # Pipeline CI/CD e deploy no Pages
 ├── config/allure/ # Categorias personalizadas do Allure
@@ -120,8 +122,7 @@ security-testing/
 ├── package.json
 ├── resultados.md # Dashboard de maturidade de segurança
 └── README.md
-
-text
+```
 
 ---
 
@@ -157,6 +158,5 @@ npm run test:race        # Concorrência em compras
 npm run test:rate-limit  # Proteção contra força bruta e DoS
 npm run test:ui          # Testes de segurança no frontend
 npm run perf:all         # Todos os cenários de performance
-
 ```
 MIT License - John Weider
